@@ -1,3 +1,4 @@
+// 1v1 대전 타격감을 극대화한 쌈뽕한 커스텀 UI 컴포넌트
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Train, Send, Users, Zap, X, Award, AlertTriangle } from 'lucide-react';

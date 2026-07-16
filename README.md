@@ -71,6 +71,8 @@
 
 ## 📝 최근 업데이트 및 변경 사항 (자동 업데이트)
 <!-- RELEASE_LOGS_START -->
+- feat: feature/22-rematch-system 1000점 피니시 조건 적용 및 실시간 재경기(Rematch) 시스템 구현 (#4) (2026-07-16)
+- feat: 1000점 피니시 조건 적용 및 실시간 재경기(Rematch) 시스템 구현 (2026-07-16)
 - feat: 1v1 대전 타격감을 높이는 실시간 토스트 및 스틸 경보 연출 구현 (2026-07-16)
 - feat: 개발 이력 README 자동 반영 Actions 구축 (2026-07-16)
 - feat: feature/20-subway-expand 1~9호선까지 범위 확장 (#1) (2026-07-16)

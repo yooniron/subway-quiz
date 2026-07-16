@@ -1,0 +1,60 @@
+name: Auto Update README Release Logs
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # 수동 실행 지원
+
+permissions:
+  contents: write
+
+jobs:
+  update-readme-logs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 전체 커밋 히스토리를 긁어오기 위함
+
+      - name: Generate Release Logs and Replace in README
+        run: |
+          # 1. 최근 의미있는 커밋 로그 15개 추출 (날짜 포함 마크다운 리스트화)
+          COMMIT_HISTORY=$(git log --grep="^feat\|^fix\|^refactor" -n 15 --format="- %s (%ad)" --date=short || echo "")
+          
+          if [ -z "$COMMIT_HISTORY" ]; then
+            COMMIT_HISTORY="- 최근에 기록된 유효한 기능 변경 내역이 없습니다."
+          fi
+          
+          # 2. 플레이스홀더 교체 텍스트 구성
+          NEW_SECTION="<!-- RELEASE_LOGS_START -->\n$COMMIT_HISTORY\n<!-- RELEASE_LOGS_END -->"
+          
+          # 3. README.md 내의 대상 영역 치환 (개행 문자가 섞인 변수를 다루기 위해 awk 활용)
+          awk -v r="$NEW_SECTION" '{
+            if ($0 ~ /<!-- RELEASE_LOGS_START -->/) {
+              print r;
+              skip=1;
+            } else if ($0 ~ /<!-- RELEASE_LOGS_END -->/) {
+              skip=0;
+            } else if (!skip) {
+              print $0;
+            }
+          }' README.md > README_NEW.md
+          
+          mv README_NEW.md README.md
+          echo "📝 README.md 개발 내역 조립 완료!"
+
+      - name: Commit and Push Updated README.md
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add README.md
+          if ! git diff --staged --quiet; then
+            git commit -m "docs: 📝 README.md 업데이트 내역 반영 [skip ci]"
+            git push
+            echo "✅ README.md 최신화 커밋 및 푸시 성공!"
+          else
+            echo "ℹ️ 변경 사항이 없으므로 푸시를 건너뜁니다."
+          fi

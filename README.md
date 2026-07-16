@@ -55,3 +55,9 @@
     npm install
     npm run dev
     ```
+
+---
+
+## 📝 최근 업데이트 및 변경 사항 (자동 업데이트)
+<!-- RELEASE_LOGS_START -->
+<!-- RELEASE_LOGS_END -->

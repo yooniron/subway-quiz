@@ -207,8 +207,8 @@ export default function App() {
                                 });
                                 showToast('score', `🔥 SPEED SOLVED! +${scoreGained}pts 획득!`);
                             } else {
-                                // 2. 상대방이 먼저 채간 경우 (경고 알림 배너 및 화면 강한 흔들림)
-                                showToast('error', `🚨 상대방이 '${data.last_correct_answer}'역을 선점했습니다!`);
+                                // 2. 상대방이 정답을 스틸해 간 경우 (경고 알림 배너 및 화면 강한 흔들림)
+                                showToast('error', `🚨 상대방 '${data.last_correct_answer}' 정답! ⚔️`);
                                 setIsShaking(true);
                                 setTimeout(() => setIsShaking(false), 500);
                             }

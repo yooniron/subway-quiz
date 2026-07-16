@@ -1,3 +1,33 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+    /* 화면 및 입력 폼 흔들림(Shake) 애니메이션 정의 */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+        20%, 40%, 60%, 80% { transform: translateX(6px); }
+    }
+    .animate-shake {
+        animation: shake 0.4s ease-in-out;
+    }
+
+    /* 토스트 메시지 부드럽게 등장 애니메이션 */
+    @keyframes toast-in {
+        0% { transform: translateY(20px) scale(0.9); opacity: 0; }
+        100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .animate-toast-in {
+        animation: toast-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* 정답 획득 시 텍스트 발광(스파클링) 애니메이션 정의 */
+    @keyframes neon-glow {
+        0%, 100% { text-shadow: 0 0 10px rgba(250,204,21,0.6), 0 0 20px rgba(250,204,21,0.4); }
+        50% { text-shadow: 0 0 20px rgba(250,204,21,1), 0 0 30px rgba(250,204,21,0.8), 0 0 40px rgba(250,204,21,0.6); }
+    }
+    .animate-neon-glow {
+        animation: neon-glow 1.5s infinite alternate;
+    }
+}

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+// 1v1 대전 타격감을 극대화한 커스텀 UI 컴포넌트
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Train, Send, Users } from 'lucide-react';
+import { Train, Send, Users, Zap, X, Award, AlertTriangle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_ANON_KEY
+    'https://iqzycldodpiutsndfzhq.supabase.co', 
+    'sb_publishable_P7iEFxAw2-38dARmK3-gIA_2Z8NIzet'                             
 );
 
 interface Quiz {
@@ -17,6 +18,12 @@ interface Quiz {
     left_1: string;
     right_1: string;
     right_2: string;
+}
+
+interface Toast {
+    id: string;
+    type: 'success' | 'error' | 'score' | 'info';
+    message: string;
 }
 
 // 비보안 컨텍스트(HTTP 외부 IP)에서도 동작하는 UUID Fallback 생성 함수
@@ -58,12 +65,37 @@ export default function App() {
     const [userInput, setUserInput] = useState('');
     const [timeLeft, setTimeLeft] = useState(30);
 
+    // 연출용 상태 변수들
+    const [toasts, setToasts] = useState<Toast[]>([]);
+    const [isShaking, setIsShaking] = useState(false);
+    const [isInputShaking, setIsInputShaking] = useState(false);
+    
+    // 실시간 퀴즈 ID 변경 감지를 위한 ref
+    const prevQuizIdRef = useRef<number | null>(null);
+    // 실시간 스코어 계산을 위한 ref
+    const scoresRef = useRef({ p1: 0, p2: 0 });
+
+    // 스코어 상태가 바뀔 때마다 ref 업데이트
+    useEffect(() => {
+        scoresRef.current = scores;
+    }, [scores]);
+
+    // 커스텀 토스트 알림 헬퍼
+    const showToast = (type: Toast['type'], message: string) => {
+        const newToast: Toast = { id: generateUUID(), type, message };
+        setToasts((prev) => [...prev, newToast]);
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== newToast.id));
+        }, 3000);
+    };
+
     const startMatchmaking = async () => {
         const { data, error } = await supabase.rpc('join_or_create_room', { p_player_id: myId });
-        if (error) return alert("매칭 에러: " + error.message);
+        if (error) return showToast('error', "매칭 에러: " + error.message);
         if (data && data.length > 0) {
             setRoomId(data[0].room_id);
             setRole(data[0].player_role as any);
+            showToast('info', "매치메이킹 탐색을 시작합니다...");
         }
     };
 
@@ -89,6 +121,7 @@ export default function App() {
                 setPlayer2Id(data.player_2);
                 setScores({ p1: data.p1_score, p2: data.p2_score });
                 if (data.quiz_target_id) {
+                    prevQuizIdRef.current = data.quiz_target_id;
                     setQuiz({
                         target_station_id: data.quiz_target_id,
                         target_station_name: data.quiz_target_name,
@@ -132,8 +165,12 @@ export default function App() {
                 setRoomStatus(data.status);
                 setPlayer1Id(data.player_1);
                 setPlayer2Id(data.player_2);
-                setScores({ p1: data.p1_score, p2: data.p2_score });
                 
+                // 실시간 스코어 비교 및 스코어러 연출 처리
+                const oldScores = scoresRef.current;
+                const nextScores = { p1: data.p1_score, p2: data.p2_score };
+                setScores(nextScores);
+
                 if (data.quiz_target_id) {
                     setQuiz({
                         target_station_id: data.quiz_target_id,
@@ -145,6 +182,39 @@ export default function App() {
                         right_1: data.quiz_right_1,
                         right_2: data.quiz_right_2
                     });
+
+                    // 퀴즈 ID 변경을 기반으로 득점자 연출 수행
+                    if (data.quiz_target_id !== prevQuizIdRef.current) {
+                        prevQuizIdRef.current = data.quiz_target_id;
+
+                        if (data.last_scorer_id) {
+                            const isMe = data.last_scorer_id === myId;
+                            
+                            // 획득한 실시간 스코어 득점 차이 계산
+                            let scoreGained = 100;
+                            if (data.last_scorer_id === data.player_1) {
+                                scoreGained = data.p1_score - oldScores.p1;
+                            } else {
+                                scoreGained = data.p2_score - oldScores.p2;
+                            }
+                            if (scoreGained <= 0) scoreGained = 100;
+
+                            if (isMe) {
+                                // 1. 내가 정답을 맞춘 경우 (쾌감 극대화 연출)
+                                confetti({
+                                    particleCount: 120,
+                                    spread: 80,
+                                    origin: { y: 0.6 }
+                                });
+                                showToast('score', `🔥 SPEED SOLVED! +${scoreGained}pts 획득!`);
+                            } else {
+                                // 2. 상대방이 정답을 스틸해 간 경우 (경고 알림 배너 및 화면 강한 흔들림)
+                                showToast('error', `🚨 상대방 '${data.last_correct_answer}' 정답! ⚔️`);
+                                setIsShaking(true);
+                                setTimeout(() => setIsShaking(false), 500);
+                            }
+                        }
+                    }
                 }
             })
             .on('presence', { event: 'sync' }, async () => {
@@ -169,12 +239,14 @@ export default function App() {
                 const opponentId = myId === currentRoom.player_1 ? currentRoom.player_2 : currentRoom.player_1;
 
                 if (opponentId && key === opponentId) {
-                    alert("상대방의 연결이 끊어져 게임이 종료되었습니다.");
+                    showToast('info', "상대방의 연결이 끊어져 게임이 종료되었습니다.");
                     await supabase.from('game_rooms').update({ status: 'FINISHED' }).eq('id', roomId);
                     
-                    setRoomId(null);
-                    setRoomStatus('WAITING');
-                    setQuiz(null);
+                    setTimeout(() => {
+                        setRoomId(null);
+                        setRoomStatus('WAITING');
+                        setQuiz(null);
+                    }, 2000);
                 }
             })
             .subscribe(async (status) => {
@@ -225,14 +297,18 @@ export default function App() {
         });
 
         if (error) {
-            alert("정답 제출 오류: " + error.message);
+            showToast('error', "정답 제출 오류: " + error.message);
             return;
         }
 
         if (isCorrect) {
-            confetti({ particleCount: 80, spread: 60 });
+            // 정답일 경우 인풋만 초기화 (소켓 변경 이벤트를 통해 전역 연출 동기화)
+            setUserInput('');
         } else {
-            alert("틀렸습니다! 다시 입력해 보세요.");
+            // 오답 피드백 연출 (인풋창 붉은 셰이크 발생, 신속 오답 알림)
+            showToast('error', `❌ '${cleanInput}'역은 오답입니다!`);
+            setIsInputShaking(true);
+            setTimeout(() => setIsInputShaking(false), 450);
             setUserInput('');
         }
     };
@@ -252,13 +328,20 @@ export default function App() {
 
     if (!roomId) {
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 text-white font-sans px-4">
-                <Train className="w-16 h-16 text-yellow-400 mb-6 animate-bounce"/>
-                <h1 className="text-3xl font-extrabold mb-2">Subway Quiz</h1>
-                <p className="text-gray-400 mb-8 text-center max-w-sm">실시간 지하철 노선 네트워크를 활용한 1대1 선착순 스피드 경쟁 플랫폼</p>
+            <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 text-white font-sans px-4 relative overflow-hidden">
+                {/* 배경 장식용 그라데이션 광원 효과 */}
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-yellow-500/10 rounded-full blur-3xl" />
+                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+                
+                <Train className="w-20 h-20 text-yellow-400 mb-6 animate-bounce"/>
+                <h1 className="text-4xl font-black mb-2 tracking-wider animate-neon-glow">Subway Quiz</h1>
+                <p className="text-gray-400 mb-10 text-center max-w-sm leading-relaxed">
+                    실시간 지하철 노선 네트워크를 활용한<br />
+                    <span className="text-yellow-400 font-bold">1대1 선착순 스피드 경쟁</span> 플랫폼
+                </p>
                 <button 
                     onClick={startMatchmaking}
-                    className="px-8 py-4 bg-yellow-400 hover:bg-yellow-500 text-gray-950 font-bold text-lg rounded-2xl shadow-lg transition-transform transform hover:scale-105"
+                    className="px-10 py-5 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-gray-950 font-black text-xl rounded-2xl shadow-[0_0_30px_rgba(250,204,21,0.3)] transition-transform transform hover:scale-105 active:scale-95"
                 >
                     실시간 대전 매칭 시작
                 </button>
@@ -268,37 +351,74 @@ export default function App() {
 
     if (roomStatus === 'WAITING') {
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 text-white px-4">
-                <Users className="w-16 h-16 text-blue-400 mb-4 animate-pulse"/>
-                <h2 className="text-2xl font-bold">상대 플레이어 대기 중...</h2>
-                <p className="text-gray-500 mt-2 text-sm font-mono">Room ID: {roomId}</p>
+            <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 text-white px-4 relative">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
+                <Users className="w-20 h-20 text-blue-400 mb-4 animate-pulse"/>
+                <h2 className="text-3xl font-extrabold tracking-wide">상대 플레이어 대기 중...</h2>
+                <p className="text-gray-500 mt-3 text-sm font-mono bg-gray-900 border border-gray-800 px-4 py-2 rounded-xl">Room ID: {roomId}</p>
             </div>
         );
     }
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 px-4 text-white">
-            <div className="flex gap-6 mb-8 w-full max-w-md justify-between bg-gray-900 border border-gray-800 p-4 rounded-2xl">
-                <div className="text-center">
-                    <p className="text-xs text-gray-500">Player 1 {role === 'player_1' ? "(나)" : "(상대)"}</p>
-                    <p className="text-2xl font-black font-mono text-blue-400">{scores.p1}</p>
+        <div className={`flex min-h-screen flex-col items-center justify-center bg-gray-950 px-4 text-white transition-transform duration-100 ${isShaking ? 'animate-shake' : ''}`}>
+            
+            {/* 커스텀 토스트 알림 컨테이너 (우측 상단 고정) */}
+            <div className="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm pointer-events-none">
+                {toasts.map((toast) => (
+                    <div 
+                        key={toast.id} 
+                        className={`flex items-center gap-3 p-4 rounded-2xl shadow-2xl backdrop-blur-md bg-gray-950/80 border animate-toast-in pointer-events-auto ${
+                            toast.type === 'score' ? 'border-yellow-400/50 shadow-[0_0_20px_rgba(250,204,21,0.25)]' :
+                            toast.type === 'error' ? 'border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.25)]' :
+                            toast.type === 'success' ? 'border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.25)]' :
+                            'border-gray-800'
+                        }`}
+                    >
+                        {toast.type === 'score' && <Zap className="w-5 h-5 text-yellow-400 animate-pulse" />}
+                        {toast.type === 'error' && <AlertTriangle className="w-5 h-5 text-red-500" />}
+                        {toast.type === 'success' && <Award className="w-5 h-5 text-green-500" />}
+                        {toast.type === 'info' && <Train className="w-5 h-5 text-blue-400" />}
+                        
+                        <span className={`text-sm font-bold ${
+                            toast.type === 'score' ? 'text-yellow-300 font-extrabold' :
+                            toast.type === 'error' ? 'text-red-300' :
+                            toast.type === 'success' ? 'text-green-300' :
+                            'text-gray-200'
+                        }`}>
+                            {toast.message}
+                        </span>
+                    </div>
+                ))}
+            </div>
+
+            <div className="flex gap-6 mb-8 w-full max-w-md justify-between bg-gray-900 border border-gray-800 p-4 rounded-2xl relative">
+                {/* 콤보/스피드 명칭 */}
+                <div className="text-center flex-1">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Player 1 {role === 'player_1' ? "(나)" : "(상대)"}</p>
+                    <p className="text-3xl font-black font-mono text-blue-400 mt-1">{scores.p1}</p>
                 </div>
-                <div className="flex flex-col items-center justify-center">
-                    <span className="text-xs bg-yellow-400 text-gray-950 px-3 py-1 rounded-full font-bold animate-pulse">
-                        ⚡ 선착순 스피드 경쟁!
+                <div className="flex flex-col items-center justify-center px-4">
+                    <span className="text-[11px] bg-gradient-to-r from-red-500 to-amber-500 text-white px-4 py-1.5 rounded-full font-black tracking-widest shadow-md">
+                        ⚡ SPEED MATCH
                     </span>
                 </div>
-                <div className="text-center">
-                    <p className="text-xs text-gray-500">Player 2 {role === 'player_2' ? "(나)" : "(상대)"}</p>
-                    <p className="text-2xl font-black font-mono text-red-400">{scores.p2}</p>
+                <div className="text-center flex-1">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Player 2 {role === 'player_2' ? "(나)" : "(상대)"}</p>
+                    <p className="text-3xl font-black font-mono text-red-400 mt-1">{scores.p2}</p>
                 </div>
             </div>
 
             {quiz && (
-                <div className="w-full max-w-2xl rounded-3xl bg-gray-900 p-8 border border-gray-800 shadow-2xl text-center">
+                <div className="w-full max-w-2xl rounded-3xl bg-gray-900/90 p-8 border border-gray-800 shadow-2xl text-center relative overflow-hidden backdrop-blur-xs">
+                    
+                    {/* 뒤쪽에 호선 대표 컬러로 몽환적인 그라데이션 광원을 발사 */}
+                    <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-20" style={{ backgroundColor: quiz.color_code }} />
+                    <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full blur-3xl opacity-20" style={{ backgroundColor: quiz.color_code }} />
+
                     <div className="flex justify-center mb-6">
                         <span 
-                            className="px-6 py-2 rounded-full font-black text-sm text-white tracking-wider shadow-md"
+                            className="px-6 py-2 rounded-full font-black text-sm text-white tracking-widest shadow-lg transform hover:scale-105 transition-all"
                             style={{ backgroundColor: quiz.color_code }}
                         >
                             {quiz.line_name}
@@ -306,53 +426,63 @@ export default function App() {
                     </div>
 
                     <div className="relative flex items-center justify-between w-full px-2 py-8 mb-8">
+                        {/* 관통하는 노선선로 선 */}
                         <div className="absolute left-0 right-0 h-3 -z-10 rounded-full" style={{ backgroundColor: quiz.color_code, top: '42%' }} />
                         
-                        <div className={`flex flex-col items-center w-1/5 transition-all ${showL2 ? 'opacity-100' : 'opacity-20 blur-xs'}`}>
+                        <div className={`flex flex-col items-center w-1/5 transition-all ${showL2 ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>
                             <div className="w-8 h-8 rounded-full border-4 border-white bg-gray-950" />
-                            <span className="mt-2 text-xs font-bold">{showL2 ? quiz.left_2 : '?'}</span>
+                            <span className="mt-2 text-xs font-bold truncate max-w-[80px]">{showL2 ? quiz.left_2 : '?'}</span>
                         </div>
                         
-                        <div className={`flex flex-col items-center w-1/5 transition-all ${showL1 ? 'opacity-100' : 'opacity-20 blur-xs'}`}>
+                        <div className={`flex flex-col items-center w-1/5 transition-all ${showL1 ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>
                             <div className="w-8 h-8 rounded-full border-4 border-white bg-gray-950" />
-                            <span className="mt-2 text-xs font-bold">{showL1 ? quiz.left_1 : '?'}</span>
+                            <span className="mt-2 text-xs font-bold truncate max-w-[80px]">{showL1 ? quiz.left_1 : '?'}</span>
                         </div>
 
                         <div className="flex flex-col items-center w-1/5">
-                            <div className="w-12 h-12 rounded-full border-4 border-yellow-400 bg-white flex items-center justify-center animate-bounce">
-                                <span className="text-gray-950 font-black text-sm">{getAnswerPlaceholder()}</span>
+                            <div className="w-14 h-14 rounded-full border-4 border-yellow-400 bg-white flex items-center justify-center animate-bounce shadow-[0_0_20px_rgba(250,204,21,0.5)]">
+                                <span className="text-gray-950 font-black text-lg">{getAnswerPlaceholder()}</span>
                             </div>
-                            <span className="mt-2 text-xs font-bold text-yellow-400">[ 정답 ]</span>
+                            <span className="mt-2 text-xs font-black text-yellow-400 tracking-wider">[ 정답 ]</span>
                         </div>
 
-                        <div className={`flex flex-col items-center w-1/5 transition-all ${showL1 ? 'opacity-100' : 'opacity-20 blur-xs'}`}>
+                        <div className={`flex flex-col items-center w-1/5 transition-all ${showL1 ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>
                             <div className="w-8 h-8 rounded-full border-4 border-white bg-gray-950" />
-                            <span className="mt-2 text-xs font-bold">{showL1 ? quiz.right_1 : '?'}</span>
+                            <span className="mt-2 text-xs font-bold truncate max-w-[80px]">{showL1 ? quiz.right_1 : '?'}</span>
                         </div>
 
-                        <div className={`flex flex-col items-center w-1/5 transition-all ${showL2 ? 'opacity-100' : 'opacity-20 blur-xs'}`}>
+                        <div className={`flex flex-col items-center w-1/5 transition-all ${showL2 ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>
                             <div className="w-8 h-8 rounded-full border-4 border-white bg-gray-950" />
-                            <span className="mt-2 text-xs font-bold">{showL2 ? quiz.right_2 : '?'}</span>
+                            <span className="mt-2 text-xs font-bold truncate max-w-[80px]">{showL2 ? quiz.right_2 : '?'}</span>
                         </div>
                     </div>
 
-                    <form onSubmit={handleAnswerSubmit} className="flex gap-2 max-w-sm mx-auto">
+                    <form onSubmit={handleAnswerSubmit} className="flex gap-2 max-w-sm mx-auto relative">
                         <input
                             type="text"
                             value={userInput}
                             onChange={(e) => setUserInput(e.target.value)}
-                            placeholder="먼저 정답을 입력하세요! ⚡"
-                            className="flex-1 px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 text-white focus:outline-none focus:border-yellow-400"
+                            placeholder="정답 역명을 타이핑하세요! ⚡"
+                            className={`flex-1 px-5 py-4 rounded-xl bg-gray-950 border border-gray-800 text-white font-bold placeholder:text-gray-600 focus:outline-none focus:border-yellow-400 focus:shadow-[0_0_15px_rgba(250,204,21,0.25)] transition-all duration-300 ${
+                                isInputShaking ? 'animate-shake border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)] text-red-400' : ''
+                            }`}
                         />
                         <button 
                             type="submit"
-                            className="px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-gray-950 font-bold rounded-xl transition-all"
+                            className="px-6 py-4 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-gray-950 font-black rounded-xl transition-all transform active:scale-95 shadow-md flex items-center justify-center"
                         >
-                            <Send className="w-4 h-4"/>
+                            <Send className="w-5 h-5"/>
                         </button>
                     </form>
 
-                    <p className="mt-4 text-xs text-red-400 font-mono">⏱️ 다음 역 힌트 확장까지 남은 시간: {timeLeft}초</p>
+                    <div className="mt-6 flex flex-col items-center gap-1">
+                        <p className="text-xs text-red-400 font-mono tracking-wider animate-pulse">⏱️ 다음 역 힌트 개방까지: {timeLeft}초</p>
+                        
+                        {/* 10초 이하 초성 힌트 오픈 시 보조 설명 */}
+                        {timeLeft <= 10 && (
+                            <p className="text-[10px] text-yellow-400/80 font-bold">💡 초성 첫 글자 오픈 찬스 활성화!</p>
+                        )}
+                    </div>
                 </div>
             )}
         </div>

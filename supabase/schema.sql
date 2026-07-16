@@ -1,3 +1,16 @@
+-- =======================================================
+-- 0. 기존 테이블 및 함수 안전 소거 (재생성 멱등성 확보)
+-- =======================================================
+DROP TABLE IF EXISTS game_rooms CASCADE;
+DROP TABLE IF EXISTS station_connections CASCADE;
+DROP TABLE IF EXISTS lines CASCADE;
+DROP TABLE IF EXISTS stations CASCADE;
+
+DROP FUNCTION IF EXISTS generate_next_quiz(UUID);
+DROP FUNCTION IF EXISTS join_or_create_room(UUID);
+DROP FUNCTION IF EXISTS submit_answer(UUID, UUID, VARCHAR, INT);
+DROP FUNCTION IF EXISTS request_rematch(UUID, UUID);
+
 -- 1. 역 정보 마스터 테이블
 CREATE TABLE stations (
   id INT PRIMARY KEY,
@@ -43,7 +56,9 @@ CREATE TABLE game_rooms (
   quiz_right_2 VARCHAR(100),
   quiz_created_at TIMESTAMPTZ,
   last_scorer_id UUID,
-  last_correct_answer VARCHAR(100)
+  last_correct_answer VARCHAR(100),
+  p1_rematch_ready BOOLEAN DEFAULT FALSE,
+  p2_rematch_ready BOOLEAN DEFAULT FALSE
 );
 
 -- 기본 노선 데이터 마스터 테이블 인서트
@@ -187,6 +202,8 @@ DECLARE
   v_target_name VARCHAR;
   v_player_1 UUID;
   v_player_2 UUID;
+  v_p1_final INT;
+  v_p2_final INT;
 BEGIN
   -- 현재 출제된 정답 및 플레이어 정보 조회
   SELECT quiz_target_name, player_1, player_2 
@@ -211,11 +228,64 @@ BEGIN
       WHERE id = p_room_id;
     END IF;
 
-    -- 정답을 맞췄으므로 즉시 다음 퀴즈를 출제합니다.
-    PERFORM generate_next_quiz(p_room_id);
+    -- 최종 득점 현황 재확인
+    SELECT p1_score, p2_score INTO v_p1_final, v_p2_final FROM game_rooms WHERE id = p_room_id;
+
+    IF v_p1_final >= 1000 OR v_p2_final >= 1000 THEN
+      UPDATE game_rooms SET status = 'FINISHED' WHERE id = p_room_id;
+    ELSE
+      -- 1000점 미만일 때만 즉시 다음 퀴즈를 출제
+      PERFORM generate_next_quiz(p_room_id);
+    END IF;
+
     RETURN TRUE;
   ELSE
     RETURN FALSE;
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- [RPC 4] 신설: 재경기(Rematch) 수락 처리 함수
+CREATE OR REPLACE FUNCTION request_rematch(
+  p_room_id UUID,
+  p_player_id UUID
+) RETURNS VOID AS $$
+DECLARE
+  v_player_1 UUID;
+  v_player_2 UUID;
+  v_p1_ready BOOLEAN;
+  v_p2_ready BOOLEAN;
+BEGIN
+  -- 플레이어 정보 및 현재 준비 상태 잠금 조회
+  SELECT player_1, player_2, p1_rematch_ready, p2_rematch_ready
+  INTO v_player_1, v_player_2, v_p1_ready, v_p2_ready
+  FROM game_rooms
+  WHERE id = p_room_id FOR UPDATE;
+
+  -- 요청한 플레이어 슬롯에 맞춰 준비 상태 TRUE 설정
+  IF p_player_id = v_player_1 THEN
+    UPDATE game_rooms SET p1_rematch_ready = TRUE WHERE id = p_room_id;
+    v_p1_ready := TRUE;
+  ELSIF p_player_id = v_player_2 THEN
+    UPDATE game_rooms SET p2_rematch_ready = TRUE WHERE id = p_room_id;
+    v_p2_ready := TRUE;
+  END IF;
+
+  -- 양사 모두 동의한 경우 세션 즉시 리셋 후 재구동
+  IF v_p1_ready = TRUE AND v_p2_ready = TRUE THEN
+    UPDATE game_rooms
+    SET
+      status = 'PLAYING',
+      p1_score = 0,
+      p2_score = 0,
+      p1_rematch_ready = FALSE,
+      p2_rematch_ready = FALSE,
+      last_scorer_id = NULL,
+      last_correct_answer = NULL
+    WHERE id = p_room_id;
+
+    -- 첫 번째 퀴즈 출제
+    PERFORM generate_next_quiz(p_room_id);
   END IF;
 END;
 $$ LANGUAGE plpgsql;

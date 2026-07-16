@@ -41,7 +41,9 @@ CREATE TABLE game_rooms (
   quiz_left_1 VARCHAR(100),
   quiz_right_1 VARCHAR(100),
   quiz_right_2 VARCHAR(100),
-  quiz_created_at TIMESTAMPTZ
+  quiz_created_at TIMESTAMPTZ,
+  last_scorer_id UUID,
+  last_correct_answer VARCHAR(100)
 );
 
 -- 기본 노선 데이터 마스터 테이블 인서트
@@ -194,11 +196,19 @@ BEGIN
 
   -- 사용자가 입력한 정답의 '역' 텍스트 제거 후 비교
   IF regexp_replace(p_user_input, '역$', '') = regexp_replace(v_target_name, '역$', '') THEN
-    -- 점수 부여
+    -- 점수 부여 및 스코어러 정보 기록
     IF p_player_id = v_player_1 THEN
-      UPDATE game_rooms SET p1_score = p1_score + p_points WHERE id = p_room_id;
+      UPDATE game_rooms 
+      SET p1_score = p1_score + p_points,
+          last_scorer_id = p_player_id,
+          last_correct_answer = v_target_name
+      WHERE id = p_room_id;
     ELSIF p_player_id = v_player_2 THEN
-      UPDATE game_rooms SET p2_score = p2_score + p_points WHERE id = p_room_id;
+      UPDATE game_rooms 
+      SET p2_score = p2_score + p_points,
+          last_scorer_id = p_player_id,
+          last_correct_answer = v_target_name
+      WHERE id = p_room_id;
     END IF;
 
     -- 정답을 맞췄으므로 즉시 다음 퀴즈를 출제합니다.

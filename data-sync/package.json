@@ -1,0 +1,19 @@
+{
+  "name": "data-sync",
+  "version": "1.0.0",
+  "description": "",
+  "main": "sync.ts",
+  "scripts": {
+    "sync": "tsx sync.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

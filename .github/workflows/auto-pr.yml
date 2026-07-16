@@ -1,0 +1,83 @@
+name: Auto Create Pull Request
+
+on:
+  push:
+    branches:
+      - 'feature/*'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  create-pull-request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 이전 커밋 이력(git log) 분석을 위해 전체 fetch
+
+      - name: Authenticate and Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. 이미 동일한 head 브랜치로 열려있는 PR 개수가 0개인지 조회
+          PR_EXISTS=$(gh pr list --head "${{ github.ref_name }}" --base main --json number --jq 'length')
+          
+          if [ "$PR_EXISTS" -eq 0 ]; then
+            echo "🚀 신규 브랜치가 감지되었습니다. 동적 PR 생성을 개시합니다."
+            
+            # 2. 브랜치명에서 이슈 번호 파싱 (예: feature/12-ranking -> 12 추출)
+            BRANCH_NAME="${{ github.ref_name }}"
+            ISSUE_NUM=$(echo "$BRANCH_NAME" | grep -oE '[0-9]+' | head -n 1 || echo "")
+            if [ -n "$ISSUE_NUM" ]; then
+              ISSUE_TAG="Closes #$ISSUE_NUM"
+            else
+              ISSUE_TAG="None (이슈 연동 없음)"
+            fi
+            
+            # 3. main과 엇갈린 커밋 로그 리스트 추출 및 prefix 분석
+            git fetch origin main
+            COMMIT_LOGS=$(git log origin/main..HEAD --oneline | sed 's/^/- /')
+            RAW_COMMITS=$(git log origin/main..HEAD --oneline)
+            
+            # 4. 접두어 매칭을 통한 체크박스 변수 정의
+            CHECK_FEAT=" "
+            CHECK_FIX=" "
+            CHECK_STYLE=" "
+            CHECK_REFACTOR=" "
+            
+            if echo "$RAW_COMMITS" | grep -iqE "feat:"; then CHECK_FEAT="x"; fi
+            if echo "$RAW_COMMITS" | grep -iqE "fix:"; then CHECK_FIX="x"; fi
+            if echo "$RAW_COMMITS" | grep -iqE "style:"; then CHECK_STYLE="x"; fi
+            if echo "$RAW_COMMITS" | grep -iqE "refactor:"; then CHECK_REFACTOR="x"; fi
+            
+            # 5. PR 템플릿 마크다운 파일을 로드하여 동적 치환 적용
+            PR_BODY_FILE="pr_body_temp.md"
+            cp .github/pull_request_template.md $PR_BODY_FILE
+            
+            # sed 치환 수행 (개행이 포함된 COMMIT_LOGS는 별도로 처리)
+            sed -i "s|{{BRANCH_NAME}}|$BRANCH_NAME|g" $PR_BODY_FILE
+            sed -i "s|{{ISSUE_TAG}}|$ISSUE_TAG|g" $PR_BODY_FILE
+            sed -i "s|{{CHECK_FEAT}}|$CHECK_FEAT|g" $PR_BODY_FILE
+            sed -i "s|{{CHECK_FIX}}|$CHECK_FIX|g" $PR_BODY_FILE
+            sed -i "s|{{CHECK_STYLE}}|$CHECK_STYLE|g" $PR_BODY_FILE
+            sed -i "s|{{CHECK_REFACTOR}}|$CHECK_REFACTOR|g" $PR_BODY_FILE
+            
+            # COMMIT_LOGS 치환 (awk를 사용하여 플레이스홀더 영역에 커밋 명세 멀티라인 주입)
+            awk -v r="$COMMIT_LOGS" '{gsub(/\{\{COMMIT_LOGS\}\}/, r)}1' $PR_BODY_FILE > pr_body_final.md
+            
+            # 6. 동적으로 생성된 제목과 본문 파일로 PR 개설
+            gh pr create \
+              --title "feat: $BRANCH_NAME 개발 브랜치 병합 요청" \
+              --body-file pr_body_final.md \
+              --base main \
+              --head "$BRANCH_NAME"
+              
+            # 임시 파일 정리
+            rm -f pr_body_temp.md pr_body_final.md
+            echo "✅ 동적 PR 템플릿 개설 완료!"
+          else
+            echo "ℹ️ 이미 해당 브랜치(${{ github.ref_name }})에 대한 Pull Request가 존재합니다."
+          fi

@@ -27,3 +27,7 @@ yarn-error.log*
 *.sw?
 .DS_Store
 Thumbs.db
+
+# 자동 빌드 명세 파일 배제 (보안 목적, 로컬은 보존)
+GEMINI.md
+gemini.md

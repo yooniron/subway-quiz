@@ -1,3 +1,4 @@
+// 1v1 대전 타격감을 극대화한 커스텀 UI 컴포넌트
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Train, Send, Users, Zap, X, Award, AlertTriangle } from 'lucide-react';
@@ -79,7 +80,7 @@ export default function App() {
         scoresRef.current = scores;
     }, [scores]);
 
-    // 쌈뽕한 커스텀 토스트 알림 헬퍼
+    // 커스텀 토스트 알림 헬퍼
     const showToast = (type: Toast['type'], message: string) => {
         const newToast: Toast = { id: generateUUID(), type, message };
         setToasts((prev) => [...prev, newToast]);
@@ -304,7 +305,7 @@ export default function App() {
             // 정답일 경우 인풋만 초기화 (소켓 변경 이벤트를 통해 전역 연출 동기화)
             setUserInput('');
         } else {
-            // 쌈뽕한 오답 연출 (인풋창 붉은 셰이크 발생, 신속 오답 알림)
+            // 오답 피드백 연출 (인풋창 붉은 셰이크 발생, 신속 오답 알림)
             showToast('error', `❌ '${cleanInput}'역은 오답입니다!`);
             setIsInputShaking(true);
             setTimeout(() => setIsInputShaking(false), 450);
@@ -328,7 +329,7 @@ export default function App() {
     if (!roomId) {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 text-white font-sans px-4 relative overflow-hidden">
-                {/* 쌈뽕한 고화질 그라데이션 광원 데코 */}
+                {/* 배경 장식용 그라데이션 광원 효과 */}
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-yellow-500/10 rounded-full blur-3xl" />
                 <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
                 
@@ -362,7 +363,7 @@ export default function App() {
     return (
         <div className={`flex min-h-screen flex-col items-center justify-center bg-gray-950 px-4 text-white transition-transform duration-100 ${isShaking ? 'animate-shake' : ''}`}>
             
-            {/* 쌈뽕한 커스텀 토스트 알림 창 탑재 (우측 상단 고정) */}
+            {/* 커스텀 토스트 알림 컨테이너 (우측 상단 고정) */}
             <div className="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm pointer-events-none">
                 {toasts.map((toast) => (
                     <div 

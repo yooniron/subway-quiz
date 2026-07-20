@@ -52,7 +52,7 @@ jobs:
           
           git add README.md
           if ! git diff --staged --quiet; then
-            git commit -m "docs: 📝 README.md 업데이트 내역 반영 [skip ci]"
+            git commit -m "docs: 📝 README.md 업데이트 내역 반영"
             git push
             echo "✅ README.md 최신화 커밋 및 푸시 성공!"
           else

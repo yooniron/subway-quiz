@@ -5,11 +5,13 @@ DROP TABLE IF EXISTS game_rooms CASCADE;
 DROP TABLE IF EXISTS station_connections CASCADE;
 DROP TABLE IF EXISTS lines CASCADE;
 DROP TABLE IF EXISTS stations CASCADE;
+DROP TABLE IF EXISTS rankings CASCADE;
 
 DROP FUNCTION IF EXISTS generate_next_quiz(UUID);
 DROP FUNCTION IF EXISTS join_or_create_room(UUID);
 DROP FUNCTION IF EXISTS submit_answer(UUID, UUID, VARCHAR, INT);
 DROP FUNCTION IF EXISTS request_rematch(UUID, UUID);
+DROP FUNCTION IF EXISTS get_single_quiz();
 
 -- 1. 역 정보 마스터 테이블
 CREATE TABLE stations (
@@ -290,8 +292,93 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- [RPC 5] 싱글모드 전용 무작위 퀴즈 추출 함수
+CREATE OR REPLACE FUNCTION get_single_quiz()
+RETURNS TABLE (
+  target_station_id INT,
+  target_station_name VARCHAR,
+  line_name VARCHAR,
+  color_code VARCHAR,
+  left_2 VARCHAR,
+  left_1 VARCHAR,
+  right_1 VARCHAR,
+  right_2 VARCHAR
+) AS $$
+DECLARE
+  v_target_id INT;
+  v_line_id INT;
+  v_target_name VARCHAR;
+  v_line_name VARCHAR;
+  v_color_code VARCHAR;
+  
+  v_l1 INT;
+  v_l2 INT;
+  v_r1 INT;
+  v_r2 INT;
+  
+  v_l2_name VARCHAR;
+  v_l1_name VARCHAR;
+  v_r1_name VARCHAR;
+  v_r2_name VARCHAR;
+BEGIN
+  -- 무작위 엣지 선택
+  SELECT from_station_id, line_id INTO v_target_id, v_line_id
+  FROM station_connections
+  ORDER BY random()
+  LIMIT 1;
+
+  SELECT station_name INTO v_target_name FROM stations WHERE id = v_target_id;
+  SELECT lines.line_name, lines.color_code INTO v_line_name, v_color_code FROM lines WHERE id = v_line_id;
+
+  SELECT to_station_id INTO v_l1 
+  FROM station_connections 
+  WHERE from_station_id = v_target_id AND line_id = v_line_id
+  ORDER BY to_station_id LIMIT 1;
+
+  IF v_l1 IS NOT NULL THEN
+    SELECT to_station_id INTO v_l2 
+    FROM station_connections 
+    WHERE from_station_id = v_l1 AND line_id = v_line_id AND to_station_id != v_target_id
+    LIMIT 1;
+  END IF;
+
+  SELECT to_station_id INTO v_r1 
+  FROM station_connections 
+  WHERE from_station_id = v_target_id AND line_id = v_line_id
+  ORDER BY to_station_id DESC LIMIT 1;
+
+  IF v_r1 IS NOT NULL AND v_r1 != v_l1 THEN
+    SELECT to_station_id INTO v_r2 
+    FROM station_connections 
+    WHERE from_station_id = v_r1 AND line_id = v_line_id AND to_station_id != v_target_id
+    LIMIT 1;
+  ELSE
+    v_r1 := NULL;
+    v_r2 := NULL;
+  END IF;
+
+  SELECT station_name INTO v_l2_name FROM stations WHERE id = v_l2;
+  SELECT station_name INTO v_l1_name FROM stations WHERE id = v_l1;
+  SELECT station_name INTO v_r1_name FROM stations WHERE id = v_r1;
+  SELECT station_name INTO v_r2_name FROM stations WHERE id = v_r2;
+
+  RETURN QUERY SELECT 
+    v_target_id, v_target_name, v_line_name, v_color_code, 
+    v_l2_name, v_l1_name, v_r1_name, v_r2_name;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 5. 싱글모드 전역 랭킹 테이블
+CREATE TABLE rankings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  player_id UUID NOT NULL,
+  nickname VARCHAR(50) NOT NULL,
+  score INT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- =======================================================
--- 5. Row Level Security (RLS) 설정 및 공용 접근 허용 정책
+-- 6. Row Level Security (RLS) 설정 및 공용 접근 허용 정책
 -- =======================================================
 
 -- RLS 비활성화 (익명 실시간 Realtime 소켓 전달 성능 보장)
@@ -299,6 +386,7 @@ ALTER TABLE stations DISABLE ROW LEVEL SECURITY;
 ALTER TABLE lines DISABLE ROW LEVEL SECURITY;
 ALTER TABLE station_connections DISABLE ROW LEVEL SECURITY;
 ALTER TABLE game_rooms DISABLE ROW LEVEL SECURITY;
+ALTER TABLE rankings DISABLE ROW LEVEL SECURITY;
 
 -- 1) stations: 모든 익명 사용자 읽기 허용 정책
 CREATE POLICY "Allow public read on stations" ON stations
@@ -322,5 +410,12 @@ CREATE POLICY "Allow public insert on game_rooms" ON game_rooms
 CREATE POLICY "Allow public update on game_rooms" ON game_rooms
   FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
 
--- 5) game_rooms 테이블에 대한 실시간 변경 감지(Realtime) 게시 설정 활성화
+-- 5) rankings: 모든 익명 사용자 읽기, 삽입 허용 정책
+CREATE POLICY "Allow public read on rankings" ON rankings
+  FOR SELECT TO anon, authenticated USING (true);
+
+CREATE POLICY "Allow public insert on rankings" ON rankings
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+-- 6) game_rooms 테이블에 대한 실시간 변경 감지(Realtime) 게시 설정 활성화
 ALTER PUBLICATION supabase_realtime ADD TABLE game_rooms;

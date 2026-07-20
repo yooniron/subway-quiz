@@ -101,9 +101,18 @@ export default function App() {
     const [showCorrectOverlay, setShowCorrectOverlay] = useState(false);
     const [floatingPoints, setFloatingPoints] = useState<number | null>(null);
     
+    // 인풋창 포커스 유지를 위한 ref
+    const inputRef = useRef<HTMLInputElement | null>(null);
+
     // 실시간 퀴즈 ID 감지용 ref
     const prevQuizIdRef = useRef<number | null>(null);
     const scoresRef = useRef({ p1: 0, p2: 0 });
+
+    const focusInput = () => {
+        setTimeout(() => {
+            inputRef.current?.focus();
+        }, 30);
+    };
 
     useEffect(() => {
         scoresRef.current = scores;
@@ -231,6 +240,7 @@ export default function App() {
                 });
                 setIsHintActive(false);
                 setUserInput('');
+                focusInput();
             } else {
                 showToast('error', "퀴즈 데이터를 읽을 수 없어 메뉴로 돌아갑니다.");
                 setGameMode('MENU');
@@ -270,6 +280,7 @@ export default function App() {
         setHintCount((prev) => prev - 1);
         setIsHintActive(true);
         showToast('info', "💡 힌트 찬스가 활성화되었습니다!");
+        focusInput();
     };
 
     // 싱글모드 정답 제출 핸들러
@@ -315,12 +326,14 @@ export default function App() {
             }
 
             loadSingleQuiz();
+            focusInput();
         } else {
             setComboCount(0);
             setIsInputShaking(true);
             setTimeout(() => setIsInputShaking(false), 450);
             showToast('error', `❌ '${cleanInput}'역은 오답입니다! (콤보 리셋)`);
             setUserInput('');
+            focusInput();
         }
     };
 
@@ -527,6 +540,7 @@ export default function App() {
         if (quiz?.target_station_id && gameMode === 'MULTIPLAYER') {
             setTimeLeft(30);
             setUserInput('');
+            focusInput();
         }
     }, [quiz?.target_station_id, gameMode]);
 
@@ -578,11 +592,13 @@ export default function App() {
 
             if (isCorrect) {
                 setUserInput('');
+                focusInput();
             } else {
                 showToast('error', `❌ '${cleanInput}'역은 오답입니다!`);
                 setIsInputShaking(true);
                 setTimeout(() => setIsInputShaking(false), 450);
                 setUserInput('');
+                focusInput();
             }
         } catch (e: any) {
             showToast('error', "정답 검증 중 예외가 발생했습니다.");
@@ -822,6 +838,8 @@ export default function App() {
 
                             <form onSubmit={handleSingleAnswerSubmit} className="flex gap-2 max-w-sm mx-auto relative">
                                 <input
+                                    ref={inputRef}
+                                    autoFocus
                                     type="text"
                                     disabled={isSingleOver}
                                     value={userInput}
@@ -1013,6 +1031,8 @@ export default function App() {
 
                             <form onSubmit={handleAnswerSubmit} className="flex gap-2 max-w-sm mx-auto relative">
                                 <input
+                                    ref={inputRef}
+                                    autoFocus
                                     type="text"
                                     value={userInput}
                                     onChange={(e) => setUserInput(e.target.value)}

@@ -45,6 +45,7 @@ CREATE TABLE game_rooms (
   status VARCHAR(20) DEFAULT 'WAITING', 
   p1_score INT DEFAULT 0,
   p2_score INT DEFAULT 0,
+  selected_line_ids INT[], -- 선택된 호선 그룹 배열 (옵션 A)
   created_at TIMESTAMPTZ DEFAULT NOW(),
   
   -- 현재 실시간 출제된 공통 퀴즈 정보
@@ -71,10 +72,11 @@ INSERT INTO lines (id, line_name, color_code) VALUES
 (4, '4호선', '#00A5DE'),
 (9, '9호선', '#BDB092');
 
--- [RPC 1] 실시간 퀴즈 생성 및 방 정보 업데이트 함수
+-- [RPC 1] 실시간 퀴즈 생성 및 방 정보 업데이트 함수 (호선 필터 반영)
 CREATE OR REPLACE FUNCTION generate_next_quiz(p_room_id UUID)
 RETURNS VOID AS $$
 DECLARE
+  v_selected_lines INT[];
   v_target_id INT;
   v_line_id INT;
   v_target_name VARCHAR;
@@ -92,11 +94,22 @@ DECLARE
   v_r1_name VARCHAR;
   v_r2_name VARCHAR;
 BEGIN
-  -- 랜덤 엣지 선택을 통한 문제 추출
-  SELECT from_station_id, line_id INTO v_target_id, v_line_id
-  FROM station_connections
-  ORDER BY random()
-  LIMIT 1;
+  -- 방에 지정된 호선 필터 조건 가져오기
+  SELECT selected_line_ids INTO v_selected_lines FROM game_rooms WHERE id = p_room_id;
+
+  -- 무작위 엣지 선택 (지정된 호선 배열 내에서만 무작위 출제)
+  IF v_selected_lines IS NULL OR cardinality(v_selected_lines) = 0 THEN
+    SELECT from_station_id, line_id INTO v_target_id, v_line_id
+    FROM station_connections
+    ORDER BY random()
+    LIMIT 1;
+  ELSE
+    SELECT from_station_id, line_id INTO v_target_id, v_line_id
+    FROM station_connections
+    WHERE line_id = ANY(v_selected_lines)
+    ORDER BY random()
+    LIMIT 1;
+  END IF;
 
   -- 기본 메타데이터 조회
   SELECT station_name INTO v_target_name FROM stations WHERE id = v_target_id;
@@ -156,8 +169,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- [RPC 2] 매치메이킹 조인 함수 개정 (매칭 완료 시 최초 퀴즈 자동 출제 포함)
-CREATE OR REPLACE FUNCTION join_or_create_room(p_player_id UUID)
+-- [RPC 2] 매치메이킹 조인 함수 개정 (동일 호선 조합 필터 매칭)
+CREATE OR REPLACE FUNCTION join_or_create_room(
+  p_player_id UUID,
+  p_selected_line_ids INT[] DEFAULT NULL
+)
 RETURNS TABLE (
   room_id UUID,
   player_role VARCHAR
@@ -165,9 +181,15 @@ RETURNS TABLE (
 DECLARE
   v_room_id UUID;
 BEGIN
+  -- 동일한 호선 조합을 지정한 대기 방(WAITING) 추적
   SELECT id INTO v_room_id
   FROM game_rooms
-  WHERE status = 'WAITING' AND player_1 != p_player_id
+  WHERE status = 'WAITING' 
+    AND player_1 != p_player_id
+    AND (
+      selected_line_ids = p_selected_line_ids 
+      OR (p_selected_line_ids IS NULL AND selected_line_ids IS NULL)
+    )
   ORDER BY created_at ASC
   LIMIT 1
   FOR UPDATE;
@@ -184,8 +206,8 @@ BEGIN
     
     RETURN QUERY SELECT v_room_id, 'player_2'::VARCHAR;
   ELSE
-    INSERT INTO game_rooms (player_1, status)
-    VALUES (p_player_id, 'WAITING')
+    INSERT INTO game_rooms (player_1, status, selected_line_ids)
+    VALUES (p_player_id, 'WAITING', p_selected_line_ids)
     RETURNING id INTO v_room_id;
     
     RETURN QUERY SELECT v_room_id, 'player_1'::VARCHAR;
@@ -292,8 +314,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- [RPC 5] 싱글모드 전용 무작위 퀴즈 추출 함수
-CREATE OR REPLACE FUNCTION get_single_quiz()
+-- [RPC 5] 싱글모드 전용 호선 필터 지원 무작위 퀴즈 추출 함수
+CREATE OR REPLACE FUNCTION get_single_quiz(
+  p_selected_line_ids INT[] DEFAULT NULL
+)
 RETURNS TABLE (
   target_station_id INT,
   target_station_name VARCHAR,
@@ -321,11 +345,19 @@ DECLARE
   v_r1_name VARCHAR;
   v_r2_name VARCHAR;
 BEGIN
-  -- 무작위 엣지 선택
-  SELECT from_station_id, line_id INTO v_target_id, v_line_id
-  FROM station_connections
-  ORDER BY random()
-  LIMIT 1;
+  -- 선택된 호선 ID 배열 필터링 적용 (파라미터가 없거나 빈 경우 전체 호선)
+  IF p_selected_line_ids IS NULL OR cardinality(p_selected_line_ids) = 0 THEN
+    SELECT from_station_id, line_id INTO v_target_id, v_line_id
+    FROM station_connections
+    ORDER BY random()
+    LIMIT 1;
+  ELSE
+    SELECT from_station_id, line_id INTO v_target_id, v_line_id
+    FROM station_connections
+    WHERE line_id = ANY(p_selected_line_ids)
+    ORDER BY random()
+    LIMIT 1;
+  END IF;
 
   SELECT station_name INTO v_target_name FROM stations WHERE id = v_target_id;
   SELECT lines.line_name, lines.color_code INTO v_line_name, v_color_code FROM lines WHERE id = v_line_id;
@@ -368,14 +400,47 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 5. 싱글모드 전역 랭킹 테이블
+-- 5. 싱글모드 전역 랭킹 테이블 (호선 정보 포함)
 CREATE TABLE rankings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   player_id UUID NOT NULL,
   nickname VARCHAR(50) NOT NULL,
   score INT NOT NULL,
+  line_ids INT[],               -- 플레이한 호선 목록
+  line_summary VARCHAR(100),    -- 호선 요약 텍스트 (예: '2호선', '전체(1~9호선)')
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- [RPC 6] 호선별/전체 명예의 전당 랭킹 조회 함수
+CREATE OR REPLACE FUNCTION get_rankings_by_line(
+  p_line_id INT DEFAULT NULL
+) RETURNS TABLE (
+  id UUID,
+  player_id UUID,
+  nickname VARCHAR,
+  score INT,
+  line_summary VARCHAR,
+  created_at TIMESTAMPTZ
+) AS $$
+BEGIN
+  IF p_line_id IS NULL THEN
+    -- 전체 랭킹 조회
+    RETURN QUERY
+    SELECT r.id, r.player_id, r.nickname, r.score, r.line_summary, r.created_at
+    FROM rankings r
+    ORDER BY r.score DESC, r.created_at ASC
+    LIMIT 20;
+  ELSE
+    -- 특정 호선(p_line_id)이 포함된 랭킹만 조회
+    RETURN QUERY
+    SELECT r.id, r.player_id, r.nickname, r.score, r.line_summary, r.created_at
+    FROM rankings r
+    WHERE p_line_id = ANY(r.line_ids) OR r.line_ids IS NULL
+    ORDER BY r.score DESC, r.created_at ASC
+    LIMIT 20;
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
 
 -- =======================================================
 -- 6. Row Level Security (RLS) 설정 및 공용 접근 허용 정책

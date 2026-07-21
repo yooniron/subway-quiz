@@ -14,6 +14,8 @@ export interface RankingEntry {
     player_id: string;
     nickname: string;
     score: number;
+    line_ids?: number[];
+    line_summary?: string;
     created_at: string;
 }
 

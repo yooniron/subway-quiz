@@ -7,6 +7,7 @@ import { LeaderboardModal } from './components/leaderboard/LeaderboardModal';
 import { MainMenuPage } from './pages/MainMenuPage';
 import { SingleGamePage } from './pages/SingleGamePage';
 import { MultiplayerGamePage } from './pages/MultiplayerGamePage';
+import { LineSelectorModal, SUBWAY_LINES } from './components/common/LineSelectorModal';
 
 export default function App() {
     // 유저 식별자
@@ -59,6 +60,11 @@ export default function App() {
     const [showCorrectOverlay, setShowCorrectOverlay] = useState(false);
     const [floatingPoints, setFloatingPoints] = useState<number | null>(null);
     
+    // 호선 선택 상태 관리 (기본값: 전체 1~9호선 선택)
+    const [selectedLineIds, setSelectedLineIds] = useState<number[]>(() => SUBWAY_LINES.map(l => l.id));
+    const [isLineSelectorOpen, setIsLineSelectorOpen] = useState(false);
+    const [targetMode, setTargetMode] = useState<'SINGLE' | 'MULTIPLAYER' | null>(null);
+
     // 인풋창 포커스 유지를 위한 ref
     const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -91,6 +97,37 @@ export default function App() {
         setTimeout(() => setFloatingPoints(null), 850);
     };
 
+    const fetchLeaderboard = async (lineId: number | null = null) => {
+        try {
+            const { data, error } = await supabase.rpc('get_rankings_by_line', {
+                p_line_id: lineId
+            });
+
+            if (error) {
+                showToast('error', "랭킹 정보를 가져오지 못했습니다.");
+            } else if (data) {
+                setRankingsList(data);
+                setIsLeaderboardOpen(true);
+            }
+        } catch (e: any) {
+            showToast('error', "랭킹 데이터 통신 중 오류가 발생했습니다.");
+        }
+    };
+
+    const handleOpenLineSelectorWithMode = (mode: 'SINGLE' | 'MULTIPLAYER') => {
+        setTargetMode(mode);
+        setIsLineSelectorOpen(true);
+    };
+
+    const handleConfirmStart = (lines: number[]) => {
+        setSelectedLineIds(lines);
+        if (targetMode === 'SINGLE') {
+            startSingleModeWithLines(lines);
+        } else if (targetMode === 'MULTIPLAYER') {
+            startMatchmakingWithLines(lines);
+        }
+    };
+
     const handleExitRoom = async () => {
         try {
             if (roomId) {
@@ -109,36 +146,18 @@ export default function App() {
             setScores({ p1: 0, p2: 0 });
             setP1RematchReady(false);
             setP2RematchReady(false);
-            setUserInput('');
-            setIsSingleOver(false);
             setGameMode('MENU');
-            prevQuizIdRef.current = null;
         }
     };
 
-    const fetchLeaderboard = async () => {
+    const startMatchmakingWithLines = async (lines: number[]) => {
         try {
-            const { data, error } = await supabase
-                .from('rankings')
-                .select('*')
-                .order('score', { ascending: false })
-                .limit(10);
-
-            if (error) {
-                showToast('error', "랭킹 정보를 가져오지 못했습니다.");
-            } else if (data) {
-                setRankingsList(data);
-                setIsLeaderboardOpen(true);
-            }
-        } catch (e: any) {
-            showToast('error', "랭킹 데이터 통신 중 오류가 발생했습니다.");
-        }
-    };
-
-    const startMatchmaking = async () => {
-        setGameMode('MULTIPLAYER');
-        try {
-            const { data, error } = await supabase.rpc('join_or_create_room', { p_player_id: myId });
+            setGameMode('MULTIPLAYER');
+            setRoomStatus('WAITING');
+            const { data, error } = await supabase.rpc('join_or_create_room', { 
+                p_player_id: myId,
+                p_selected_line_ids: lines 
+            });
             if (error) {
                 showToast('error', "매칭 에러: " + error.message);
                 await handleExitRoom();
@@ -147,7 +166,7 @@ export default function App() {
             if (data && data.length > 0) {
                 setRoomId(data[0].room_id);
                 setRole(data[0].player_role as any);
-                showToast('info', "매치메이킹 탐색을 시작합니다...");
+                showToast('info', `🎯 지정된 호선(${lines.length}개) 1대1 매칭 탐색을 시작합니다...`);
             } else {
                 showToast('error', "방 생성을 실패하였습니다. 다시 시도해 주세요.");
                 await handleExitRoom();
@@ -158,7 +177,7 @@ export default function App() {
         }
     };
 
-    const startSingleMode = () => {
+    const startSingleModeWithLines = (lines: number[]) => {
         setGameMode('SINGLE');
         setSingleScore(0);
         setSingleTimeLeft(60);
@@ -168,12 +187,14 @@ export default function App() {
         setIsSingleOver(false);
         setIsRankSubmitted(false);
         setUserInput('');
-        loadSingleQuiz();
+        loadSingleQuiz(lines);
     };
 
-    const loadSingleQuiz = async () => {
+    const loadSingleQuiz = async (lines: number[] = selectedLineIds) => {
         try {
-            const { data, error } = await supabase.rpc('get_single_quiz');
+            const { data, error } = await supabase.rpc('get_single_quiz', {
+                p_selected_line_ids: lines
+            });
             if (error) {
                 showToast('error', "퀴즈 출제 오류가 발생하여 메인으로 복귀합니다.");
                 setGameMode('MENU');
@@ -274,7 +295,7 @@ export default function App() {
                 setSingleTimeLeft((prev) => prev + timeBonus);
             }
 
-            loadSingleQuiz();
+            loadSingleQuiz(selectedLineIds);
             focusInput();
         } else {
             setComboCount(0);
@@ -296,11 +317,21 @@ export default function App() {
         const cleanNick = nicknameInput.trim();
         localStorage.setItem('subway_nickname', cleanNick);
 
+        // 호선 요약 문구 생성
+        let lineSummary = '전체(1~9호선)';
+        if (selectedLineIds.length === 1) {
+            lineSummary = `${selectedLineIds[0]}호선`;
+        } else if (selectedLineIds.length < SUBWAY_LINES.length) {
+            lineSummary = selectedLineIds.map(id => `${id}호선`).join(',');
+        }
+
         try {
             const { error } = await supabase.from('rankings').insert({
                 player_id: myId,
                 nickname: cleanNick,
-                score: singleScore
+                score: singleScore,
+                line_ids: selectedLineIds,
+                line_summary: lineSummary
             });
 
             if (error) {
@@ -518,13 +549,23 @@ export default function App() {
                 onClose={() => setIsLeaderboardOpen(false)}
                 rankingsList={rankingsList}
                 myId={myId}
+                onFetchByLine={(lineId) => fetchLeaderboard(lineId)}
+            />
+
+            <LineSelectorModal 
+                isOpen={isLineSelectorOpen}
+                onClose={() => setIsLineSelectorOpen(false)}
+                selectedLineIds={selectedLineIds}
+                onSelectLines={(lines) => setSelectedLineIds(lines)}
+                onConfirmStart={(lines) => handleConfirmStart(lines)}
+                targetMode={targetMode}
             />
 
             {gameMode === 'MENU' && (
                 <MainMenuPage 
-                    onStartMatchmaking={startMatchmaking}
-                    onStartSingleMode={startSingleMode}
-                    onFetchLeaderboard={fetchLeaderboard}
+                    onFetchLeaderboard={() => fetchLeaderboard(null)}
+                    selectedLineIds={selectedLineIds}
+                    onOpenLineSelectorWithMode={handleOpenLineSelectorWithMode}
                 />
             )}
 

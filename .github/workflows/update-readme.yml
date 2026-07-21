@@ -20,8 +20,8 @@ jobs:
 
       - name: Generate Release Logs and Replace in README
         run: |
-          # 1. 최근 의미있는 커밋 로그 15개 추출 (날짜 포함 마크다운 리스트화)
-          COMMIT_HISTORY=$(git log --grep="^feat\|^fix\|^refactor" -n 15 --format="- %s (%ad)" --date=short || echo "")
+          # 1. 최근 의미있는 커밋 로그 추출 (머지 커밋 제외, 중복 제거, 날짜 포함 마크다운 리스트화)
+          COMMIT_HISTORY=$(git log --no-merges --grep="^feat\|^fix\|^refactor" -n 25 --format="%s (%ad)" --date=short | awk '!seen[$0]++' | head -n 12 | sed 's/^/- /')
           
           if [ -z "$COMMIT_HISTORY" ]; then
             COMMIT_HISTORY="- 최근에 기록된 유효한 기능 변경 내역이 없습니다."

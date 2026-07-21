@@ -336,32 +336,21 @@ export default function App() {
                 setP1RematchReady(data.p1_rematch_ready || false);
                 setP2RematchReady(data.p2_rematch_ready || false);
 
-                if (data.status === 'PLAYING' && data.current_station_id) {
-                    if (data.current_station_id !== prevQuizIdRef.current) {
-                        prevQuizIdRef.current = data.current_station_id;
-                        fetchQuizDetails(data.current_station_id);
+                if (data.status === 'PLAYING' && data.quiz_target_id) {
+                    if (data.quiz_target_id !== prevQuizIdRef.current) {
+                        prevQuizIdRef.current = data.quiz_target_id;
+                        setQuiz({
+                            target_station_id: data.quiz_target_id,
+                            target_station_name: data.quiz_target_name,
+                            line_name: data.quiz_line_name,
+                            color_code: data.quiz_color_code,
+                            left_2: data.quiz_left_2,
+                            left_1: data.quiz_left_1,
+                            right_1: data.quiz_right_1,
+                            right_2: data.quiz_right_2
+                        });
                     }
                 }
-            }
-        };
-
-        const fetchQuizDetails = async (stationId: number) => {
-            const { data, error } = await supabase.rpc('get_quiz_details', { p_station_id: stationId });
-            if (error) {
-                showToast('error', "퀴즈 상세 정보를 불러오는 데 실패했습니다.");
-                return;
-            }
-            if (data && data.length > 0) {
-                setQuiz({
-                    target_station_id: data[0].target_station_id,
-                    target_station_name: data[0].target_station_name,
-                    line_name: data[0].line_name,
-                    color_code: data[0].color_code,
-                    left_2: data[0].left_2,
-                    left_1: data[0].left_1,
-                    right_1: data[0].right_1,
-                    right_2: data[0].right_2
-                });
             }
         };
 
@@ -399,10 +388,19 @@ export default function App() {
                 setP1RematchReady(data.p1_rematch_ready || false);
                 setP2RematchReady(data.p2_rematch_ready || false);
 
-                if (data.status === 'PLAYING' && data.current_station_id) {
-                    if (data.current_station_id !== prevQuizIdRef.current) {
-                        prevQuizIdRef.current = data.current_station_id;
-                        fetchQuizDetails(data.current_station_id);
+                if (data.status === 'PLAYING' && data.quiz_target_id) {
+                    if (data.quiz_target_id !== prevQuizIdRef.current) {
+                        prevQuizIdRef.current = data.quiz_target_id;
+                        setQuiz({
+                            target_station_id: data.quiz_target_id,
+                            target_station_name: data.quiz_target_name,
+                            line_name: data.quiz_line_name,
+                            color_code: data.quiz_color_code,
+                            left_2: data.quiz_left_2,
+                            left_1: data.quiz_left_1,
+                            right_1: data.quiz_right_1,
+                            right_2: data.quiz_right_2
+                        });
                     }
                 }
             })
@@ -507,9 +505,10 @@ export default function App() {
         }
     };
 
-    const showL1 = timeLeft <= 20;
-    const showL2 = timeLeft <= 10;
-    const showHintChar = timeLeft <= 5;
+    // 30초 스피드 대전 힌트 공개 플래그 (양끝 2단계 역 선공개 ➡️ 10초 뒤 직접 인접역 후공개)
+    const showL2 = true;                   // 1단계: 양끝 2단계 역(left_2, right_2)은 0초부터 항상 선공개
+    const showL1 = timeLeft <= 20;         // 2단계: 10초 경과(남은시간 20초 이하) 시 직접 인접역(left_1, right_1) 언락
+    const showHintChar = timeLeft <= 10;   // 3단계: 20초 경과(남은시간 10초 이하) 시 정답 초성 힌트 언락
 
     return (
         <>

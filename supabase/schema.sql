@@ -40,6 +40,7 @@ CREATE TABLE station_connections (
 -- 4. 실시간 게임 대전방 테이블 (퀴즈 및 스코어 공유)
 CREATE TABLE game_rooms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_title VARCHAR(100) DEFAULT '스피드 대전 방',
   player_1 UUID,
   player_2 UUID,
   status VARCHAR(20) DEFAULT 'WAITING', 
@@ -61,7 +62,10 @@ CREATE TABLE game_rooms (
   last_scorer_id UUID,
   last_correct_answer VARCHAR(100),
   p1_rematch_ready BOOLEAN DEFAULT FALSE,
-  p2_rematch_ready BOOLEAN DEFAULT FALSE
+  p2_rematch_ready BOOLEAN DEFAULT FALSE,
+  p1_ready BOOLEAN DEFAULT TRUE,
+  p2_ready BOOLEAN DEFAULT FALSE,
+  last_ping_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 기본 노선 데이터 마스터 테이블 인서트
@@ -169,7 +173,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- [RPC 2] 매치메이킹 조인 함수 개정 (동일 호선 조합 필터 매칭)
+-- [RPC 2] 매치메이킹 입장 함수 개정 (동일 호선 조합 필터 매칭)
 CREATE OR REPLACE FUNCTION join_or_create_room(
   p_player_id UUID,
   p_selected_line_ids INT[] DEFAULT NULL
@@ -198,11 +202,8 @@ BEGIN
     UPDATE game_rooms
     SET 
       player_2 = p_player_id,
-      status = 'PLAYING'
+      p2_ready = FALSE
     WHERE id = v_room_id;
-    
-    -- 매칭이 완성되었으므로 최초 1회 퀴즈를 출제합니다.
-    PERFORM generate_next_quiz(v_room_id);
     
     RETURN QUERY SELECT v_room_id, 'player_2'::VARCHAR;
   ELSE
@@ -212,6 +213,169 @@ BEGIN
     
     RETURN QUERY SELECT v_room_id, 'player_1'::VARCHAR;
   END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- [RPC 2-1] 맞춤 방 생성 (커스텀 방 제목 + 출제 호선 지정)
+CREATE OR REPLACE FUNCTION create_custom_room(
+  p_player_id UUID,
+  p_room_title VARCHAR,
+  p_selected_line_ids INT[] DEFAULT NULL
+)
+RETURNS TABLE (
+  room_id UUID,
+  player_role VARCHAR
+) AS $$
+DECLARE
+  v_room_id UUID;
+  v_title VARCHAR;
+BEGIN
+  v_title := COALESCE(NULLIF(trim(p_room_title), ''), '즐거운 지하철 대전 방');
+  
+  INSERT INTO game_rooms (player_1, status, room_title, selected_line_ids)
+  VALUES (p_player_id, 'WAITING', v_title, p_selected_line_ids)
+  RETURNING id INTO v_room_id;
+  
+  RETURN QUERY SELECT v_room_id, 'player_1'::VARCHAR;
+END;
+$$ LANGUAGE plpgsql;
+
+-- [RPC 2-2] 특정 방 ID 직통 입장
+CREATE OR REPLACE FUNCTION join_room_by_id(
+  p_room_id UUID,
+  p_player_id UUID
+)
+RETURNS TABLE (
+  room_id UUID,
+  player_role VARCHAR
+) AS $$
+DECLARE
+  v_p1 UUID;
+  v_p2 UUID;
+  v_status VARCHAR;
+BEGIN
+  SELECT player_1, player_2, status INTO v_p1, v_p2, v_status
+  FROM game_rooms
+  WHERE id = p_room_id FOR UPDATE;
+
+  IF v_status = 'WAITING' AND (v_p1 != p_player_id OR v_p1 IS NULL) THEN
+    UPDATE game_rooms
+    SET player_2 = p_player_id,
+        p2_ready = FALSE
+    WHERE id = p_room_id;
+
+    RETURN QUERY SELECT p_room_id, 'player_2'::VARCHAR;
+  ELSIF v_p1 = p_player_id THEN
+    RETURN QUERY SELECT p_room_id, 'player_1'::VARCHAR;
+  ELSIF v_p2 = p_player_id THEN
+    RETURN QUERY SELECT p_room_id, 'player_2'::VARCHAR;
+  ELSE
+    RAISE EXCEPTION '이미 풀방이거나 접속할 수 없는 대전방입니다.';
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- [RPC 2-3] 로비 용 실시간 대기방/대전방 목록 조회
+CREATE OR REPLACE FUNCTION get_active_lobbies()
+RETURNS TABLE (
+  id UUID,
+  room_title VARCHAR,
+  player_1 UUID,
+  player_2 UUID,
+  status VARCHAR,
+  selected_line_ids INT[],
+  player_count INT,
+  created_at TIMESTAMPTZ
+) AS $$
+BEGIN
+  -- 1) 30초 이상 백그라운드 핑이 누락된 유령 방을 CANCELLED 처리로 파기 (자가치유)
+  UPDATE game_rooms AS gr
+  SET status = 'CANCELLED'
+  WHERE gr.status IN ('WAITING', 'PLAYING')
+    AND gr.last_ping_at < NOW() - INTERVAL '30 seconds';
+
+  -- 2) 활성 로비 목록 조회 리턴
+  RETURN QUERY
+  SELECT 
+    g.id,
+    g.room_title,
+    g.player_1,
+    g.player_2,
+    g.status,
+    g.selected_line_ids,
+    (CASE WHEN g.player_2 IS NOT NULL THEN 2 WHEN g.player_1 IS NOT NULL THEN 1 ELSE 0 END)::INT AS player_count,
+    g.created_at
+  FROM game_rooms g
+  WHERE (
+    g.status = 'WAITING' 
+    AND g.created_at >= NOW() - INTERVAL '15 minutes'
+    AND (g.player_1 IS NOT NULL OR g.player_2 IS NOT NULL)
+  ) OR (
+    g.status = 'PLAYING' 
+    AND g.created_at >= NOW() - INTERVAL '2 hours'
+  )
+  ORDER BY 
+    CASE WHEN g.status = 'WAITING' THEN 0 ELSE 1 END ASC,
+    g.created_at DESC
+  LIMIT 50;
+END;
+$$ LANGUAGE plpgsql;
+
+-- [RPC 2-4] 대기실 참가자 준비(Ready) 토글
+CREATE OR REPLACE FUNCTION toggle_player_ready(
+  p_room_id UUID,
+  p_player_id UUID
+) RETURNS BOOLEAN AS $$
+DECLARE
+  v_p1 UUID;
+  v_p2 UUID;
+  v_current_ready BOOLEAN;
+BEGIN
+  SELECT player_1, player_2, p2_ready INTO v_p1, v_p2, v_current_ready
+  FROM game_rooms
+  WHERE id = p_room_id FOR UPDATE;
+
+  IF p_player_id = v_p2 THEN
+    UPDATE game_rooms
+    SET p2_ready = NOT v_current_ready
+    WHERE id = p_room_id;
+    RETURN NOT v_current_ready;
+  ELSIF p_player_id = v_p1 THEN
+    UPDATE game_rooms
+    SET p1_ready = TRUE
+    WHERE id = p_room_id;
+    RETURN TRUE;
+  END IF;
+
+  RETURN FALSE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- [RPC 2-5] 방장 수동 게임 시작 (Ready 완료 시 START 버튼 가동)
+CREATE OR REPLACE FUNCTION start_game_by_host(
+  p_room_id UUID,
+  p_player_id UUID
+) RETURNS BOOLEAN AS $$
+DECLARE
+  v_p1 UUID;
+  v_p2 UUID;
+  v_p2_ready BOOLEAN;
+BEGIN
+  SELECT player_1, player_2, p2_ready INTO v_p1, v_p2, v_p2_ready
+  FROM game_rooms
+  WHERE id = p_room_id FOR UPDATE;
+
+  -- 방장이고 상대방이 입장 및 Ready 완료된 상태인 경우
+  IF p_player_id = v_p1 AND v_p2 IS NOT NULL AND v_p2_ready = TRUE THEN
+    UPDATE game_rooms
+    SET status = 'PLAYING'
+    WHERE id = p_room_id;
+
+    PERFORM generate_next_quiz(p_room_id);
+    RETURN TRUE;
+  END IF;
+
+  RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -439,6 +603,69 @@ BEGIN
     ORDER BY r.score DESC, r.created_at ASC
     LIMIT 20;
   END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- [RPC 7] 방 퇴장 및 방장 승계(Host Migration) / 세션 영구 유지 함수
+CREATE OR REPLACE FUNCTION exit_room(
+  p_room_id UUID,
+  p_player_id UUID
+) RETURNS BOOLEAN AS $$
+DECLARE
+  v_p1 UUID;
+  v_p2 UUID;
+  v_status VARCHAR;
+BEGIN
+  SELECT player_1, player_2, status INTO v_p1, v_p2, v_status
+  FROM game_rooms
+  WHERE id = p_room_id FOR UPDATE;
+
+  -- 0) 진행 중인 대전(PLAYING)인 경우, 한 명이라도 이탈(기권)하면 방 전체를 CANCELLED로 파기
+  IF v_status = 'PLAYING' THEN
+    UPDATE game_rooms
+    SET 
+      status = 'CANCELLED',
+      player_1 = NULL,
+      player_2 = NULL,
+      p1_ready = FALSE,
+      p2_ready = FALSE
+    WHERE id = p_room_id;
+    RETURN TRUE;
+  END IF;
+
+  -- 1) 대기 중(WAITING)일 때 방장(Player 1)이 퇴장한 경우
+  IF p_player_id = v_p1 THEN
+    IF v_p2 IS NOT NULL THEN
+      -- 대기 중인 Player 2를 새로운 방장(Player 1)으로 승격 (Host Migration)
+      UPDATE game_rooms
+      SET 
+        player_1 = v_p2,
+        player_2 = NULL,
+        p1_ready = TRUE,
+        p2_ready = FALSE
+      WHERE id = p_room_id;
+    ELSE
+      -- 플레이어가 아무도 남지 않은 경우 비로소 방 파기
+      UPDATE game_rooms
+      SET 
+        status = 'CANCELLED',
+        player_1 = NULL,
+        p1_ready = FALSE,
+        p2_ready = FALSE
+      WHERE id = p_room_id;
+    END IF;
+    RETURN TRUE;
+  -- 2) 대기 중(WAITING)일 때 참가자(Player 2)가 퇴장한 경우: player_2 = NULL 및 p2_ready = FALSE 원복 (방 세션 유지)
+  ELSIF p_player_id = v_p2 THEN
+    UPDATE game_rooms
+    SET 
+      player_2 = NULL,
+      p2_ready = FALSE
+    WHERE id = p_room_id;
+    RETURN TRUE;
+  END IF;
+
+  RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql;
 

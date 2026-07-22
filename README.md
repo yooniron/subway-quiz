@@ -2,6 +2,22 @@
 
 실시간 지하철 노선 네트워크 구조를 활용하여 1대1로 마주 보며 선착순으로 정답을 외쳐 점수를 획득하는 **양방향 실시간 스피드 경쟁 퀴즈 게임**입니다. 
 
+![Subway Quiz Main Menu](./main_menu.png)
+
+---
+
+## 📸 In-Game Screenshots (실제 게임 화면)
+
+### 1v1 실시간 멀티플레이 대기실 및 대전 화면
+| 🟢 대기실 (초직관적인 READY 상태 분기) | ⚔️ 실시간 멀티플레이 대전 화면 |
+| :---: | :---: |
+| ![Room Lobby Waiting](./multi_lobby_p2_ready.png) | ![Multiplayer Gameplay](./multi_gameplay.png) |
+
+### 🎯 싱글플레이 타임어택 (60초 챌린지) 화면
+| 🎯 싱글플레이 타임어택 인게임 |
+| :---: |
+| ![Singleplay Gameplay](./play_game_start.png) |
+
 ---
 
 ## ⚡ 핵심 게임 시스템
@@ -18,12 +34,17 @@
 9. **Presence 기반 동적 세션 정리**:
     * 대기 중 방장이 탭을 닫으면 찌꺼기 룸 레코드가 DB에서 자동으로 청소(`DELETE`)됩니다.
     * 플레이 중 상대가 접속을 이탈하면 즉시 경고 팝업과 함께 대전을 종료(`FINISHED`)하고 메인 홈으로 돌려보냅니다.
+10. **🧹 실시간 유령방 자가치유 (Self-Healing) 시스템**:
+    * 유저가 비정상적으로 탭을 닫거나 인터넷 연결을 유실할 경우, 10초 주기 백그라운드 핑이 누락되어 30초 내로 유령방이 로비 갱신 로직을 통해 자동 감지되고 `'CANCELLED'` 파기 처리됩니다.
+11. **🧪 E2E & Unit 테스트 자동화 파이프라인**:
+    * Vitest(유닛 테스트)와 Playwright(다중 브라우저 컨텍스트 E2E 시나리오 테스트)의 자동 테스트 러너를 구축하고, 커밋 시 자동 체크하는 Git Pre-commit Hook 및 GitHub Actions CI 워크플로우를 도입했습니다.
 
 ---
 
 ## 🛠 기술 스택
 * **Frontend**: React (TypeScript), Vite, Tailwind CSS, Lucide React, Canvas Confetti
 * **Backend & DB**: Supabase (PostgreSQL, Realtime, Presence, RPC Functions)
+* **Testing & Automation**: Playwright (E2E Test), Vitest (Unit Test), GitHub Actions (CI), Git Hooks (.githooks)
 * **Data Sync**: Node.js, Axios, tsx (서울교통공사 OpenAPI 연동)
 
 ---

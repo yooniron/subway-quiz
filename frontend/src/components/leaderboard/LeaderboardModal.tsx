@@ -97,7 +97,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/85 backdrop-blur-md animate-card-pop">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-950/85 backdrop-blur-md animate-card-pop">
             <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-2xl relative">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-black text-white flex items-center gap-2">

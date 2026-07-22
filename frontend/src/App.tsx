@@ -634,9 +634,9 @@ export default function App() {
                 }
             })
             .on('presence', { event: 'leave' }, async ({ key }) => {
-                // 대전 중(PLAYING)일 때만 presence leave 시 이탈 종료 처리, 대기실(WAITING)에서는 세션 유지
-                if (roomStatusRef.current === 'PLAYING') {
-                    showToast('error', "상대방이 기권(이탈)하여 대전이 종료됩니다.");
+                // 대전 중(PLAYING) 또는 종료 후 재경기 대기 중(FINISHED)일 때 상대가 방을 완전히 이탈한 경우
+                if (roomStatusRef.current === 'PLAYING' || roomStatusRef.current === 'FINISHED') {
+                    showToast('error', "상대방이 방을 퇴장하여 대전 세션이 종료되었습니다.");
                     await handleExitRoom();
                 }
             })

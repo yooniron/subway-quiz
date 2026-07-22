@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { supabase, generateUUID } from './lib/supabase';
-import type { Quiz, RankingEntry, Toast, GameMode, PlayerRole, RoomStatus } from './types';
+import type { Quiz, RankingEntry, Toast, GameMode, PlayerRole, RoomStatus, LobbyRoom } from './types';
 import { ToastContainer } from './components/common/ToastContainer';
 import { LeaderboardModal } from './components/leaderboard/LeaderboardModal';
 import { MainMenuPage } from './pages/MainMenuPage';
 import { SingleGamePage } from './pages/SingleGamePage';
 import { MultiplayerGamePage } from './pages/MultiplayerGamePage';
+import { LobbyPage } from './pages/LobbyPage';
+import { CreateRoomModal } from './components/common/CreateRoomModal';
+import { RoomWaitingModal } from './components/common/RoomWaitingModal';
 import { LineSelectorModal, SUBWAY_LINES } from './components/common/LineSelectorModal';
 
 export default function App() {
@@ -30,6 +33,9 @@ export default function App() {
     const [roomStatus, setRoomStatus] = useState<RoomStatus>('WAITING');
     const [scores, setScores] = useState({ p1: 0, p2: 0 });
     const [quiz, setQuiz] = useState<Quiz | null>(null);
+    const [isP2Connected, setIsP2Connected] = useState(false);
+    const [isP2Ready, setIsP2Ready] = useState(false);
+    const [currentRoomTitle, setCurrentRoomTitle] = useState('스피드 대전 방');
 
     const [userInput, setUserInput] = useState('');
     const [timeLeft, setTimeLeft] = useState(30);
@@ -65,12 +71,27 @@ export default function App() {
     const [isLineSelectorOpen, setIsLineSelectorOpen] = useState(false);
     const [targetMode, setTargetMode] = useState<'SINGLE' | 'MULTIPLAYER' | null>(null);
 
+    // 로비 관련 상태 변수들
+    const [lobbies, setLobbies] = useState<LobbyRoom[]>([]);
+    const [isLobbyLoading, setIsLobbyLoading] = useState(false);
+    const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false);
+
     // 인풋창 포커스 유지를 위한 ref
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     // 실시간 퀴즈 ID 감지용 ref
     const prevQuizIdRef = useRef<number | null>(null);
     const scoresRef = useRef({ p1: 0, p2: 0 });
+    const roleRef = useRef<PlayerRole>(role);
+    const roomStatusRef = useRef<RoomStatus>(roomStatus);
+
+    useEffect(() => {
+        roleRef.current = role;
+    }, [role]);
+
+    useEffect(() => {
+        roomStatusRef.current = roomStatus;
+    }, [roomStatus]);
 
     const focusInput = () => {
         setTimeout(() => {
@@ -81,6 +102,24 @@ export default function App() {
     useEffect(() => {
         scoresRef.current = scores;
     }, [scores]);
+
+    // 실시간 대전 유령 방 방지용 백그라운드 핑(Ping) 헬스체크
+    useEffect(() => {
+        if (!roomId || gameMode !== 'MULTIPLAYER') return;
+
+        const pingInterval = setInterval(async () => {
+            try {
+                await supabase
+                    .from('game_rooms')
+                    .update({ last_ping_at: new Date().toISOString() })
+                    .eq('id', roomId);
+            } catch (e) {
+                // 핑 실패 예외 방어
+            }
+        }, 10000);
+
+        return () => clearInterval(pingInterval);
+    }, [roomId, gameMode]);
 
     const showToast = (type: Toast['type'], message: string) => {
         const id = generateUUID();
@@ -114,9 +153,104 @@ export default function App() {
         }
     };
 
+    const fetchLobbies = async () => {
+        setIsLobbyLoading(true);
+        try {
+            const { data, error } = await supabase.rpc('get_active_lobbies');
+            if (error) {
+                showToast('error', "로비 방 목록을 가져오지 못했습니다.");
+            } else if (data) {
+                setLobbies(data);
+            }
+        } catch (e: any) {
+            showToast('error', "로비 목록 로딩 예외가 발생했습니다.");
+        } finally {
+            setIsLobbyLoading(false);
+        }
+    };
+
+    // 로비 진입 시 실시간 변경 구독 및 주기적 자가치유 리프레시
+    useEffect(() => {
+        if (gameMode !== 'LOBBY') return;
+        fetchLobbies();
+
+        const channel = supabase
+            .channel('lobby_realtime_channel')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'game_rooms'
+            }, () => {
+                fetchLobbies();
+            })
+            .subscribe();
+
+        const refetchInterval = setInterval(() => {
+            fetchLobbies();
+        }, 15000); // 15초마다 주기적으로 로비 목록을 조회하여 유령 방을 청소/갱신
+
+        return () => {
+            clearInterval(refetchInterval);
+            supabase.removeChannel(channel);
+        };
+    }, [gameMode]);
+
+    const handleCreateCustomRoom = async (roomTitle: string, lines: number[]) => {
+        try {
+            setGameMode('MULTIPLAYER');
+            setRoomStatus('WAITING');
+            const { data, error } = await supabase.rpc('create_custom_room', {
+                p_player_id: myId,
+                p_room_title: roomTitle,
+                p_selected_line_ids: lines
+            });
+            if (error) {
+                showToast('error', "맞춤 방 생성 에러: " + error.message);
+                await handleExitRoom();
+                return;
+            }
+            if (data && data.length > 0) {
+                setRoomId(data[0].room_id);
+                setRole(data[0].player_role as any);
+                showToast('success', `'${roomTitle}' 방을 개설하였습니다! 상대 입장을 대기합니다.`);
+            }
+        } catch (e: any) {
+            showToast('error', "방 생성 중 예외가 발생했습니다.");
+            await handleExitRoom();
+        }
+    };
+
+    const handleJoinRoomById = async (targetRoomId: string) => {
+        try {
+            setGameMode('MULTIPLAYER');
+            setRoomStatus('WAITING');
+            const { data, error } = await supabase.rpc('join_room_by_id', {
+                p_room_id: targetRoomId,
+                p_player_id: myId
+            });
+            if (error) {
+                showToast('error', "방 입장 실패: " + error.message);
+                await handleExitRoom();
+                return;
+            }
+            if (data && data.length > 0) {
+                setRoomId(data[0].room_id);
+                setRole(data[0].player_role as any);
+                showToast('success', "대전 방에 입장하였습니다!");
+            }
+        } catch (e: any) {
+            showToast('error', "방 입장 중 예외가 발생했습니다.");
+            await handleExitRoom();
+        }
+    };
+
     const handleOpenLineSelectorWithMode = (mode: 'SINGLE' | 'MULTIPLAYER') => {
-        setTargetMode(mode);
-        setIsLineSelectorOpen(true);
+        if (mode === 'MULTIPLAYER') {
+            setGameMode('LOBBY');
+        } else {
+            setTargetMode(mode);
+            setIsLineSelectorOpen(true);
+        }
     };
 
     const handleConfirmStart = (lines: number[]) => {
@@ -125,6 +259,38 @@ export default function App() {
             startSingleModeWithLines(lines);
         } else if (targetMode === 'MULTIPLAYER') {
             startMatchmakingWithLines(lines);
+        }
+    };
+
+    const handleToggleReady = async () => {
+        if (!roomId) return;
+        try {
+            const { error } = await supabase.rpc('toggle_player_ready', {
+                p_room_id: roomId,
+                p_player_id: myId
+            });
+            if (error) {
+                showToast('error', "READY 준비 상태 변경 실패: " + error.message);
+            }
+        } catch (e: any) {
+            showToast('error', "READY 상태 변경 중 오류가 발생했습니다.");
+        }
+    };
+
+    const handleStartGameByHost = async () => {
+        if (!roomId || role !== 'player_1') return;
+        try {
+            const { data, error } = await supabase.rpc('start_game_by_host', {
+                p_room_id: roomId,
+                p_player_id: myId
+            });
+            if (error || !data) {
+                showToast('error', "게임 시작 오류가 발생했습니다.");
+            } else {
+                showToast('success', "🚀 퀴즈 대전이 시작되었습니다!");
+            }
+        } catch (e: any) {
+            showToast('error', "게임 시작 중 오류가 발생했습니다.");
         }
     };
 
@@ -146,6 +312,8 @@ export default function App() {
             setScores({ p1: 0, p2: 0 });
             setP1RematchReady(false);
             setP2RematchReady(false);
+            setIsP2Connected(false);
+            setIsP2Ready(false);
             setGameMode('MENU');
         }
     };
@@ -366,6 +534,9 @@ export default function App() {
                 setScores({ p1: data.p1_score, p2: data.p2_score });
                 setP1RematchReady(data.p1_rematch_ready || false);
                 setP2RematchReady(data.p2_rematch_ready || false);
+                setIsP2Connected(!!data.player_2);
+                setIsP2Ready(data.p2_ready || false);
+                setCurrentRoomTitle(data.room_title || '스피드 대전 방');
 
                 if (data.status === 'PLAYING' && data.quiz_target_id) {
                     if (data.quiz_target_id !== prevQuizIdRef.current) {
@@ -396,12 +567,39 @@ export default function App() {
                 filter: `id=eq.${roomId}`
             }, async (payload) => {
                 const data = payload.new;
+                if (!data) return;
+
+                // 1) 방장이 나가서 내가 새 방장으로 승격된 경우 (Host Migration)
+                if (data.player_1 === myId && roleRef.current !== 'player_1') {
+                    setRole('player_1');
+                    showToast('info', "👑 기존 방장이 퇴장하여 당신이 새로운 방장으로 지정되었습니다!");
+                }
+
+                // 2) 참가자(Player 2)가 나간 경우
+                if (!data.player_2 && roleRef.current === 'player_1' && isP2Connected) {
+                    showToast('info', "ℹ️ 상대 플레이어가 대기실을 퇴장했습니다.");
+                }
+
+                // 3) 대기방이 완전 파기되었거나 대전 진행 중 한 명이 기권/이탈한 경우 (CANCELLED)
+                if (data.status === 'CANCELLED') {
+                    if (roomStatus === 'PLAYING') {
+                        showToast('error', "⚠️ 상대 플레이어가 대전을 기권(이탈)하여 대전이 종료되었습니다.");
+                    } else {
+                        showToast('error', "📢 대기방이 파기되었습니다.");
+                    }
+                    await handleExitRoom();
+                    return;
+                }
+
                 setRoomStatus(data.status);
+                setIsP2Connected(!!data.player_2);
+                setIsP2Ready(data.p2_ready || false);
+                setCurrentRoomTitle(data.room_title || '스피드 대전 방');
                 
                 const prevP1 = scoresRef.current.p1;
                 const prevP2 = scoresRef.current.p2;
 
-                const isP1 = role === 'player_1';
+                const isP1 = role === 'player_1' || data.player_1 === myId;
                 const myAdded = isP1 ? data.p1_score - prevP1 : data.p2_score - prevP2;
                 const oppAdded = isP1 ? data.p2_score - prevP2 : data.p1_score - prevP1;
 
@@ -436,8 +634,11 @@ export default function App() {
                 }
             })
             .on('presence', { event: 'leave' }, async ({ key }) => {
-                showToast('error', "상대방이 세션에서 이탈하여 대전이 종료됩니다.");
-                await handleExitRoom();
+                // 대전 중(PLAYING)일 때만 presence leave 시 이탈 종료 처리, 대기실(WAITING)에서는 세션 유지
+                if (roomStatusRef.current === 'PLAYING') {
+                    showToast('error', "상대방이 기권(이탈)하여 대전이 종료됩니다.");
+                    await handleExitRoom();
+                }
             })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
@@ -448,10 +649,32 @@ export default function App() {
                 }
             });
 
+        const handleBeforeUnload = () => {
+            if (roomId) {
+                // keepalive fetch를 통해 브라우저 탭 종료 시에도 인증 헤더를 실어 동기 퇴장 처리 보장
+                const url = `${supabase.supabaseUrl}/rest/v1/rpc/exit_room`;
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabase.supabaseKey,
+                        'Authorization': `Bearer ${supabase.supabaseKey}`
+                    },
+                    body: JSON.stringify({ p_room_id: roomId, p_player_id: myId }),
+                    keepalive: true
+                }).catch(() => {});
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        window.addEventListener('pagehide', handleBeforeUnload);
+
         return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            window.removeEventListener('pagehide', handleBeforeUnload);
             supabase.removeChannel(channel);
         };
-    }, [roomId, gameMode, role]);
+    }, [roomId, gameMode, myId]);
 
     useEffect(() => {
         if (quiz?.target_station_id && gameMode === 'MULTIPLAYER') {
@@ -561,11 +784,29 @@ export default function App() {
                 targetMode={targetMode}
             />
 
+            <CreateRoomModal 
+                isOpen={isCreateRoomOpen}
+                onClose={() => setIsCreateRoomOpen(false)}
+                onCreateRoom={handleCreateCustomRoom}
+            />
+
             {gameMode === 'MENU' && (
                 <MainMenuPage 
                     onFetchLeaderboard={() => fetchLeaderboard(null)}
                     selectedLineIds={selectedLineIds}
                     onOpenLineSelectorWithMode={handleOpenLineSelectorWithMode}
+                />
+            )}
+
+            {gameMode === 'LOBBY' && (
+                <LobbyPage 
+                    lobbies={lobbies}
+                    isLoading={isLobbyLoading}
+                    onRefresh={fetchLobbies}
+                    onQuickMatch={() => startMatchmakingWithLines(selectedLineIds)}
+                    onOpenCreateRoom={() => setIsCreateRoomOpen(true)}
+                    onJoinRoom={handleJoinRoomById}
+                    onBackToMenu={() => setGameMode('MENU')}
                 />
             )}
 
@@ -590,7 +831,7 @@ export default function App() {
                     onAnswerSubmit={handleSingleAnswerSubmit}
                     onUseHint={useSingleHint}
                     onExit={handleExitRoom}
-                    onRestart={startSingleMode}
+                    onRestart={() => startSingleModeWithLines(selectedLineIds)}
                     onNicknameChange={(e) => setNicknameInput(e.target.value)}
                     onSubmitRanking={submitSingleRanking}
                     onOpenLeaderboard={fetchLeaderboard}
@@ -598,29 +839,48 @@ export default function App() {
             )}
 
             {gameMode === 'MULTIPLAYER' && (
-                <MultiplayerGamePage 
-                    roomId={roomId}
-                    roomStatus={roomStatus}
-                    quiz={quiz}
-                    scores={scores}
-                    myRole={role}
-                    timeLeft={timeLeft}
-                    userInput={userInput}
-                    isInputShaking={isInputShaking}
-                    isShaking={isShaking}
-                    showCorrectOverlay={showCorrectOverlay}
-                    floatingPoints={floatingPoints}
-                    inputRef={inputRef}
-                    showL1={showL1}
-                    showL2={showL2}
-                    showHintChar={showHintChar}
-                    p1RematchReady={p1RematchReady}
-                    p2RematchReady={p2RematchReady}
-                    onInputChange={(e) => setUserInput(e.target.value)}
-                    onAnswerSubmit={handleAnswerSubmit}
-                    onExitRoom={handleExitRoom}
-                    onRematchRequest={handleRematchRequest}
-                />
+                <div className="min-h-screen bg-gray-950 text-white font-sans relative overflow-x-hidden">
+                    {roomStatus === 'WAITING' && roomId && (
+                        <RoomWaitingModal 
+                            roomId={roomId}
+                            roomTitle={currentRoomTitle}
+                            selectedLineIds={selectedLineIds}
+                            role={role}
+                            isP2Connected={isP2Connected}
+                            isP2Ready={isP2Ready}
+                            onToggleReady={handleToggleReady}
+                            onStartGame={handleStartGameByHost}
+                            onExitRoom={handleExitRoom}
+                            showToast={showToast}
+                        />
+                    )}
+
+                    {roomStatus !== 'WAITING' && (
+                        <MultiplayerGamePage 
+                            roomId={roomId}
+                            roomStatus={roomStatus}
+                            quiz={quiz}
+                            scores={scores}
+                            myRole={role}
+                            timeLeft={timeLeft}
+                            userInput={userInput}
+                            isInputShaking={isInputShaking}
+                            isShaking={isShaking}
+                            showCorrectOverlay={showCorrectOverlay}
+                            floatingPoints={floatingPoints}
+                            inputRef={inputRef}
+                            showL1={showL1}
+                            showL2={showL2}
+                            showHintChar={showHintChar}
+                            p1RematchReady={p1RematchReady}
+                            p2RematchReady={p2RematchReady}
+                            onInputChange={(e) => setUserInput(e.target.value)}
+                            onAnswerSubmit={handleAnswerSubmit}
+                            onExitRoom={handleExitRoom}
+                            onRematchRequest={handleRematchRequest}
+                        />
+                    )}
+                </div>
             )}
         </>
     );

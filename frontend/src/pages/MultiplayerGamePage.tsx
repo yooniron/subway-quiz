@@ -55,29 +55,9 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
     onExitRoom,
     onRematchRequest
 }) => {
-    // 1대1 대기방 UI
+    // 대기 중(WAITING) 상태일 경우 상위 RoomWaitingModal 모달에서 대기실을 단독 처리하도록 null 리턴
     if (roomStatus === 'WAITING') {
-        return (
-            <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 text-white font-sans px-4 relative overflow-hidden">
-                <div className="flex flex-col items-center justify-center max-w-sm w-full bg-gray-900/80 border border-gray-800 p-8 rounded-3xl shadow-2xl backdrop-blur-md text-center animate-card-pop">
-                    <Users className="w-16 h-16 text-yellow-400 mb-4 animate-bounce" />
-                    <h2 className="text-2xl font-black mb-1">상대 대전 상대 매칭 중...</h2>
-                    <p className="text-xs text-gray-400 mb-6 font-medium">실시간 대기열에서 상대를 탐색하고 있습니다.</p>
-                    
-                    <div className="w-full bg-gray-950 border border-gray-800 p-3 rounded-2xl mb-6">
-                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">ROOM ID</span>
-                        <span className="text-xs font-mono text-yellow-400 font-bold break-all">{roomId}</span>
-                    </div>
-
-                    <button 
-                        onClick={onExitRoom}
-                        className="px-6 py-3 bg-gray-950 border border-gray-800 hover:border-gray-700 text-gray-400 hover:text-white font-bold text-xs rounded-xl transition-all"
-                    >
-                        매칭 취소 및 메뉴로 이동
-                    </button>
-                </div>
-            </div>
-        );
+        return null;
     }
 
     const isGameOver = roomStatus === 'FINISHED' || scores.p1 >= 1000 || scores.p2 >= 1000;

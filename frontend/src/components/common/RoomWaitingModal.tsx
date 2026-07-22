@@ -50,10 +50,25 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
     const lineIds = selectedLineIds || [];
     const isAllLines = lineIds.length === 0 || lineIds.length === SUBWAY_LINES.length;
 
-    const handleCopyLink = () => {
+    const handleCopyLink = async () => {
         const inviteUrl = `${window.location.origin}?room=${roomId}`;
-        navigator.clipboard.writeText(inviteUrl);
-        showToast('success', "🔗 초대 링크가 클립보드에 복사되었습니다!");
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(inviteUrl);
+            } else {
+                const textArea = document.createElement('textarea');
+                textArea.value = inviteUrl;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+            showToast('success', "🔗 초대 링크가 클립보드에 복사되었습니다!");
+        } catch (err) {
+            showToast('error', "초대 링크 복사에 실패했습니다.");
+        }
     };
 
     const triggerEmoji = (emoji: string) => {

@@ -25,6 +25,17 @@ export interface Toast {
     message: string;
 }
 
-export type GameMode = 'MENU' | 'SINGLE' | 'MULTIPLAYER';
+export interface LobbyRoom {
+    id: string;
+    room_title: string;
+    player_1: string;
+    player_2: string | null;
+    status: RoomStatus;
+    selected_line_ids: number[] | null;
+    player_count: number;
+    created_at: string;
+}
+
+export type GameMode = 'MENU' | 'SINGLE' | 'MULTIPLAYER' | 'LOBBY';
 export type PlayerRole = 'player_1' | 'player_2' | null;
 export type RoomStatus = 'WAITING' | 'PLAYING' | 'FINISHED';

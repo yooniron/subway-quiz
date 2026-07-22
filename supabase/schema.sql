@@ -291,7 +291,7 @@ BEGIN
   -- 1) 30초 이상 백그라운드 핑이 누락된 유령 방을 CANCELLED 처리로 파기 (자가치유)
   UPDATE game_rooms AS gr
   SET status = 'CANCELLED'
-  WHERE gr.status IN ('WAITING', 'PLAYING')
+  WHERE gr.status IN ('WAITING', 'PLAYING', 'FINISHED')
     AND gr.last_ping_at < NOW() - INTERVAL '30 seconds';
 
   -- 2) 활성 로비 목록 조회 리턴
@@ -620,15 +620,17 @@ BEGIN
   FROM game_rooms
   WHERE id = p_room_id FOR UPDATE;
 
-  -- 0) 진행 중인 대전(PLAYING)인 경우, 한 명이라도 이탈(기권)하면 방 전체를 CANCELLED로 파기
-  IF v_status = 'PLAYING' THEN
+  -- 0) 진행 중인 대전(PLAYING) 또는 종료된 대전(FINISHED)인 경우, 한 명이라도 이탈(기권)하면 방 전체를 CANCELLED로 파기
+  IF v_status = 'PLAYING' OR v_status = 'FINISHED' THEN
     UPDATE game_rooms
     SET 
       status = 'CANCELLED',
       player_1 = NULL,
       player_2 = NULL,
       p1_ready = FALSE,
-      p2_ready = FALSE
+      p2_ready = FALSE,
+      p1_rematch_ready = FALSE,
+      p2_rematch_ready = FALSE
     WHERE id = p_room_id;
     RETURN TRUE;
   END IF;

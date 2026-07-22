@@ -1,0 +1,11 @@
+#!/bin/sh
+echo "🔍 Running pre-commit unit test validation..."
+cd frontend
+npm run test:unit
+RESULT=$?
+if [ $RESULT -ne 0 ]; then
+  echo "❌ Unit tests failed! Commit aborted."
+  exit 1
+fi
+echo "🟢 Unit tests passed. Proceeding with commit."
+exit 0

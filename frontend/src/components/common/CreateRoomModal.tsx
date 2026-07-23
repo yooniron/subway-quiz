@@ -197,7 +197,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
                     <button
                         type="submit"
-                        className="w-full mt-2 py-4 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-gray-950 font-black text-sm rounded-2xl shadow-xl shadow-amber-400/20 transition-transform active:scale-98"
+                        className="w-full mt-2 py-4 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-gray-950 font-black text-sm rounded-2xl shadow-xl shadow-amber-400/20 transition-transform active:scale-95"
                     >
                         🏠 방 만들기 ➕
                     </button>

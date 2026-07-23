@@ -44,7 +44,7 @@ async function main() {
             .upsert(lineMasters);
 
         if (lineUpsertError) {
-            console.warn("⚠️ lines 테이블 적재 실패:", lineUpsertError.message);
+            throw new Error(`lines 테이블 적재 실패: ${lineUpsertError.message}`);
         } else {
             console.log("✅ 1~9호선 라인 마스터 데이터 적재 완료");
         }
@@ -56,7 +56,7 @@ async function main() {
         const items = resultData?.row || [];
 
         if (items.length === 0) {
-            console.warn("⚠️ API 응답 데이터가 비어있거나 올바르지 않습니다. 응답 본문:", response.data);
+            throw new Error(`API 응답 데이터가 비어있거나 올바르지 않아 동기화를 중단합니다.`);
         }
 
         for (const item of items) {
@@ -172,6 +172,7 @@ async function main() {
         console.log(`✅ 1~9호선 노선망 전체 연결망 엣지 ${finalEdges.length}개 주입 완료!`);
     } catch (err) {
         console.error("❌ 오류 발생:", err);
+        process.exitCode = 1;
     }
 }
 

@@ -116,7 +116,7 @@ export default function App() {
         scoresRef.current = scores;
     }, [scores]);
 
-    // 실시간 대전 유령 방 방지용 백그라운드 핑(Ping) 헬스체크
+    // 실시간 대전 유령 방 방지용 백그라운드 핑(Ping) 헬스체크 (5초 간격)
     useEffect(() => {
         if (!roomId || gameMode !== 'MULTIPLAYER') return;
 
@@ -129,7 +129,7 @@ export default function App() {
             } catch (e) {
                 // 핑 실패 예외 방어
             }
-        }, 10000);
+        }, 5000);
 
         return () => clearInterval(pingInterval);
     }, [roomId, gameMode]);
@@ -336,6 +336,19 @@ export default function App() {
         }
     };
 
+    // URL 쿼리 파라미터(?room=UUID) 감지 시 자동 대전방 직통 조인 랜딩 (V3 수리)
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const targetRoomId = params.get('room');
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        if (targetRoomId && uuidRegex.test(targetRoomId)) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            showToast('info', "🔗 초대 링크를 감지하여 대전방으로 이동합니다!");
+            handleJoinRoomById(targetRoomId);
+        }
+    }, []);
+
     const handleOpenLineSelectorWithMode = (mode: 'SINGLE' | 'MULTIPLAYER') => {
         if (mode === 'MULTIPLAYER') {
             setGameMode('LOBBY');
@@ -527,6 +540,7 @@ export default function App() {
         const cleanUser = cleanInput.replace(/역$/, '');
 
         if (cleanUser === cleanTarget) {
+            setUserInput('');
             const nextCombo = comboCount + 1;
             setComboCount(nextCombo);
 
@@ -985,7 +999,7 @@ export default function App() {
                     onRestart={() => startSingleModeWithLines(selectedLineIds)}
                     onNicknameChange={(e) => setNicknameInput(e.target.value)}
                     onSubmitRanking={submitSingleRanking}
-                    onOpenLeaderboard={fetchLeaderboard}
+                    onOpenLeaderboard={() => fetchLeaderboard(null)}
                 />
             )}
 

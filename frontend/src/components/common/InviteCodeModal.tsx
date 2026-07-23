@@ -71,7 +71,7 @@ export const InviteCodeModal: React.FC<InviteCodeModalProps> = ({
                         <button
                             type="submit"
                             disabled={code.trim().length < 4}
-                            className="flex-1 py-3 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 disabled:opacity-50 text-gray-950 font-black text-xs rounded-xl shadow-lg shadow-amber-400/20 transition-transform active:scale-98"
+                            className="flex-1 py-3 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 disabled:opacity-50 text-gray-950 font-black text-xs rounded-xl shadow-lg shadow-amber-400/20 transition-transform active:scale-95"
                         >
                             방 찾아 입장 🚀
                         </button>

@@ -389,11 +389,11 @@ RETURNS TABLE (
   invite_code VARCHAR
 ) AS $$
 BEGIN
-  -- 1) 30초 이상 백그라운드 핑이 누락된 유령 방을 CANCELLED 처리로 파기 (자가치유)
+  -- 1) 90초 이상 백그라운드 핑이 누락된 유령 방을 CANCELLED 처리로 파기 (자가치유, 백그라운드 탭 스로틀링 방지)
   UPDATE game_rooms AS gr
   SET status = 'CANCELLED'
   WHERE gr.status IN ('WAITING', 'PLAYING', 'FINISHED')
-    AND gr.last_ping_at < NOW() - INTERVAL '30 seconds';
+    AND gr.last_ping_at < NOW() - INTERVAL '90 seconds';
 
   -- 2) 활성 로비 목록 조회 리턴
   RETURN QUERY
@@ -627,6 +627,11 @@ BEGIN
     LIMIT 1;
   END IF;
 
+  -- 엣지 데이터가 없어 퀴즈를 생성할 수 없는 경우 안전 종료 (C1 방어)
+  IF v_target_id IS NULL THEN
+    RETURN;
+  END IF;
+
   SELECT station_name INTO v_target_name FROM stations WHERE id = v_target_id;
   SELECT lines.line_name, lines.color_code INTO v_line_name, v_color_code FROM lines WHERE id = v_line_id;
 
@@ -779,12 +784,12 @@ $$ LANGUAGE plpgsql;
 -- 6. Row Level Security (RLS) 설정 및 공용 접근 허용 정책
 -- =======================================================
 
--- RLS 비활성화 (익명 실시간 Realtime 소켓 전달 성능 보장)
+-- RLS 보안 활성화 (rankings 무단 삭제/갱신 방지)
 ALTER TABLE stations DISABLE ROW LEVEL SECURITY;
 ALTER TABLE lines DISABLE ROW LEVEL SECURITY;
 ALTER TABLE station_connections DISABLE ROW LEVEL SECURITY;
 ALTER TABLE game_rooms DISABLE ROW LEVEL SECURITY;
-ALTER TABLE rankings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE rankings ENABLE ROW LEVEL SECURITY;
 
 -- 1) stations: 모든 익명 사용자 읽기 허용 정책
 CREATE POLICY "Allow public read on stations" ON stations

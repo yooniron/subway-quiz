@@ -22,10 +22,13 @@ interface MultiplayerGamePageProps {
     showL1: boolean;
     showL2: boolean;
     showHintChar: boolean;
-    // Rematch 관련
+    // Rematch 및 패스 관련
     p1RematchReady: boolean;
     p2RematchReady: boolean;
     targetScore?: number;
+    passCount?: number;
+    isPassRequested?: boolean;
+    onPassRequest?: () => void;
     // 이벤트 핸들러
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onAnswerSubmit: (e: React.FormEvent) => void;
@@ -52,6 +55,9 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
     p1RematchReady,
     p2RematchReady,
     targetScore = 500,
+    passCount = 0,
+    isPassRequested = false,
+    onPassRequest,
     onInputChange,
     onAnswerSubmit,
     onExitRoom,
@@ -88,9 +94,13 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
                         quiz={quiz}
                         mode="MULTIPLAYER"
                         onExit={onExitRoom}
+                        timeLeft={timeLeft}
                         showL1={showL1}
                         showL2={showL2}
                         showHintChar={showHintChar}
+                        passCount={passCount}
+                        isPassRequested={isPassRequested}
+                        onPassRequest={onPassRequest}
                     />
 
                     <AnswerForm 

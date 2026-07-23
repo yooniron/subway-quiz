@@ -53,9 +53,11 @@ export default function App() {
     const [p2Emoji, setP2Emoji] = useState<string | null>(null);
     const channelRef = useRef<any>(null);
 
-    // 재경기 수락 상태 변수
+    // 재경기 및 패스 관련 상태 변수
     const [p1RematchReady, setP1RematchReady] = useState(false);
     const [p2RematchReady, setP2RematchReady] = useState(false);
+    const [p1PassRequested, setP1PassRequested] = useState(false);
+    const [p2PassRequested, setP2PassRequested] = useState(false);
 
     // 싱글모드 타임어택 상태 변수들
     const [singleScore, setSingleScore] = useState(0);
@@ -386,6 +388,27 @@ export default function App() {
         }
     };
 
+    const handleRequestPass = async () => {
+        if (!roomId || gameMode !== 'MULTIPLAYER') return;
+        try {
+            const { data, error } = await supabase.rpc('request_room_pass', {
+                p_room_id: roomId,
+                p_player_id: myId
+            });
+            if (error) {
+                showToast('error', "문제 패스 요청 실패: " + error.message);
+            } else if (data && data.length > 0) {
+                if (data[0].is_skipped) {
+                    showToast('info', "⚡ 양쪽 플레이어 모두 패스하여 다음 문제로 스킵되었습니다!");
+                } else {
+                    showToast('info', "⏩ 상대방에게 문제 패스를 요청했습니다.");
+                }
+            }
+        } catch (e: any) {
+            showToast('error', "패스 처리 중 오류가 발생했습니다.");
+        }
+    };
+
     const handleStartGameByHost = async () => {
         if (!roomId || role !== 'player_1') return;
         try {
@@ -645,6 +668,8 @@ export default function App() {
                 setScores({ p1: data.p1_score, p2: data.p2_score });
                 setP1RematchReady(data.p1_rematch_ready || false);
                 setP2RematchReady(data.p2_rematch_ready || false);
+                setP1PassRequested(data.p1_pass_requested || false);
+                setP2PassRequested(data.p2_pass_requested || false);
                 setIsP2Connected(!!data.player_2);
                 setIsP2Ready(data.p2_ready || false);
                 setCurrentRoomTitle(data.room_title || '스피드 대전 방');
@@ -714,6 +739,8 @@ export default function App() {
                 setRoomStatus(data.status);
                 setIsP2Connected(!!data.player_2);
                 setIsP2Ready(data.p2_ready || false);
+                setP1PassRequested(data.p1_pass_requested || false);
+                setP2PassRequested(data.p2_pass_requested || false);
                 setCurrentRoomTitle(data.room_title || '스피드 대전 방');
                 if (data.invite_code) {
                     setCurrentInviteCode(data.invite_code);
@@ -1053,6 +1080,10 @@ export default function App() {
                             showHintChar={showHintChar}
                             p1RematchReady={p1RematchReady}
                             p2RematchReady={p2RematchReady}
+                            targetScore={currentTargetScore}
+                            passCount={(p1PassRequested ? 1 : 0) + (p2PassRequested ? 1 : 0)}
+                            isPassRequested={role === 'player_1' ? p1PassRequested : p2PassRequested}
+                            onPassRequest={handleRequestPass}
                             onInputChange={(e) => setUserInput(e.target.value)}
                             onAnswerSubmit={handleAnswerSubmit}
                             onExitRoom={handleExitRoom}

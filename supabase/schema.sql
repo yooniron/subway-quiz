@@ -74,6 +74,8 @@ CREATE TABLE game_rooms (
   p2_rematch_ready BOOLEAN DEFAULT FALSE,
   p1_ready BOOLEAN DEFAULT TRUE,
   p2_ready BOOLEAN DEFAULT FALSE,
+  p1_pass_requested BOOLEAN DEFAULT FALSE,
+  p2_pass_requested BOOLEAN DEFAULT FALSE,
   last_ping_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -177,7 +179,9 @@ BEGIN
     quiz_left_1 = v_l1_name,
     quiz_right_1 = v_r1_name,
     quiz_right_2 = v_r2_name,
-    quiz_created_at = NOW()
+    quiz_created_at = NOW(),
+    p1_pass_requested = FALSE,
+    p2_pass_requested = FALSE
   WHERE id = p_room_id;
 END;
 $$ LANGUAGE plpgsql;
@@ -486,6 +490,51 @@ BEGIN
   END IF;
 
   RETURN FALSE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- [RPC 2-6] 멀티플레이 문제 합의 빠른 패스 (Quick Pass)
+CREATE OR REPLACE FUNCTION request_room_pass(
+  p_room_id UUID,
+  p_player_id UUID
+) RETURNS TABLE (
+  p1_pass BOOLEAN,
+  p2_pass BOOLEAN,
+  is_skipped BOOLEAN
+) AS $$
+DECLARE
+  v_p1 UUID;
+  v_p2 UUID;
+  v_p1_pass BOOLEAN;
+  v_p2_pass BOOLEAN;
+BEGIN
+  SELECT player_1, player_2, COALESCE(p1_pass_requested, FALSE), COALESCE(p2_pass_requested, FALSE)
+  INTO v_p1, v_p2, v_p1_pass, v_p2_pass
+  FROM game_rooms
+  WHERE id = p_room_id FOR UPDATE;
+
+  IF p_player_id = v_p1 THEN
+    v_p1_pass := TRUE;
+  ELSIF p_player_id = v_p2 THEN
+    v_p2_pass := TRUE;
+  END IF;
+
+  -- 양쪽 플레이어 모두 패스 희망 시 즉시 다음 퀴즈 출제 및 패스 플래그 리셋
+  IF v_p1_pass AND v_p2_pass THEN
+    UPDATE game_rooms
+    SET p1_pass_requested = FALSE,
+        p2_pass_requested = FALSE
+    WHERE id = p_room_id;
+    
+    PERFORM generate_next_quiz(p_room_id);
+    RETURN QUERY SELECT TRUE, TRUE, TRUE;
+  ELSE
+    UPDATE game_rooms
+    SET p1_pass_requested = v_p1_pass,
+        p2_pass_requested = v_p2_pass
+    WHERE id = p_room_id;
+    RETURN QUERY SELECT v_p1_pass, v_p2_pass, FALSE;
+  END IF;
 END;
 $$ LANGUAGE plpgsql;
 

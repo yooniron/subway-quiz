@@ -155,7 +155,7 @@ export const LineSelectorModal: React.FC<LineSelectorModalProps> = ({
                 {/* 게임 시작 버튼 */}
                 <button
                     onClick={handleStart}
-                    className="w-full py-4 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-gray-950 font-black text-sm rounded-2xl shadow-xl shadow-yellow-400/20 transition-transform active:scale-98 flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-gray-950 font-black text-sm rounded-2xl shadow-xl shadow-yellow-400/20 transition-transform active:scale-95 flex items-center justify-center gap-2"
                 >
                     🎯 선택한 호선으로 게임 시작 ({selectedLineIds.length}개 선택됨)
                 </button>

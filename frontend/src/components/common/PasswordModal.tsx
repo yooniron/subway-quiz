@@ -70,7 +70,7 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-black text-xs rounded-xl shadow-lg shadow-rose-500/20 transition-transform active:scale-98"
+                            className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-black text-xs rounded-xl shadow-lg shadow-rose-500/20 transition-transform active:scale-95"
                         >
                             입장하기 ⚔️
                         </button>

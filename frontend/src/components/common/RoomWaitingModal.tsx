@@ -283,7 +283,7 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
                             onClick={onStartGame}
                             className={`w-full py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-xl ${
                                 isP2Connected && isP2Ready
-                                    ? 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-gray-950 shadow-amber-400/20 active:scale-98 animate-pulse'
+                                    ? 'bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-gray-950 shadow-amber-400/20 active:scale-95 animate-pulse'
                                     : 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700/50'
                             }`}
                         >
@@ -298,7 +298,7 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
                         /* 참가자 시점 (Player 2): READY 준비 완료 토글 버튼 */
                         <button
                             onClick={onToggleReady}
-                            className={`w-full py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-xl active:scale-98 ${
+                            className={`w-full py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-xl active:scale-95 ${
                                 isP2Ready
                                     ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20'
                                     : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/25 animate-pulse'

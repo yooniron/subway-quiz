@@ -6,6 +6,14 @@
 
 ---
 
+## 🎥 Gameplay Video Demos (실제 게임 플레이 시연 영상)
+
+| ⚔️ 1대1 실시간 멀티플레이어 대전 시연 데모 | 🎯 싱글 타임어택 챌린지 시연 데모 |
+| :---: | :---: |
+| <video src="./frontend/public/media/multiplayer_demo.webm" width="100%" controls autoplay loop muted></video> | <video src="./frontend/public/media/single_demo.webm" width="100%" controls autoplay loop muted></video> |
+
+---
+
 ## 📸 In-Game Screenshots (실제 게임 화면)
 
 ### 1v1 실시간 멀티플레이 대기실 및 대전 화면

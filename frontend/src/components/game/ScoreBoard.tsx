@@ -10,6 +10,7 @@ interface ScoreBoardProps {
     timeLeft: number;
     floatingPoints: number | null;
     isShaking: boolean;
+    targetScore?: number;
     // Rematch 관련
     p1RematchReady: boolean;
     p2RematchReady: boolean;
@@ -24,6 +25,7 @@ export const ScoreBoard: React.FC<ScoreBoardProps> = ({
     timeLeft,
     floatingPoints,
     isShaking,
+    targetScore = 500,
     p1RematchReady,
     p2RematchReady,
     onRematchRequest,
@@ -33,11 +35,20 @@ export const ScoreBoard: React.FC<ScoreBoardProps> = ({
     const myScore = isP1 ? scores.p1 : scores.p2;
     const opponentScore = isP1 ? scores.p2 : scores.p1;
 
+    const myLabel = isP1 ? "P1 (나)" : "P2 (나)";
+    const opponentLabel = isP1 ? "P2 (상대)" : "P1 (상대)";
+
+    const myColor = isP1 ? "text-blue-400" : "text-emerald-400";
+    const myPingBg = isP1 ? "bg-blue-400" : "bg-emerald-400";
+
+    const opponentColor = isP1 ? "text-red-400" : "text-amber-400";
+    const opponentPingBg = isP1 ? "bg-red-400" : "bg-amber-400";
+
     const myRematch = isP1 ? p1RematchReady : p2RematchReady;
     const opponentRematch = isP1 ? p2RematchReady : p1RematchReady;
 
-    const isWinner = myScore >= 1000;
-    const isOpponentWinner = opponentScore >= 1000;
+    const isWinner = myScore >= targetScore;
+    const isOpponentWinner = opponentScore >= targetScore;
     const isGameOver = roomStatus === 'FINISHED' || isWinner || isOpponentWinner;
 
     return (
@@ -45,15 +56,16 @@ export const ScoreBoard: React.FC<ScoreBoardProps> = ({
             <div className={`flex gap-6 w-full justify-between bg-gray-900/80 border border-gray-800 p-5 rounded-3xl shadow-2xl backdrop-blur-md relative overflow-hidden transition-transform duration-300 ${
                 isShaking ? 'animate-shake border-red-500/50' : ''
             }`}>
+                {/* 좌측 카드: 언제나 접속한 본인 (나 / ME) */}
                 <div className="text-center flex-1 relative">
                     <div className="flex items-center justify-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
-                        <p className="text-[10px] font-black tracking-widest text-blue-400 uppercase">P1 (나)</p>
+                        <span className={`w-2 h-2 rounded-full ${myPingBg} animate-ping`} />
+                        <p className={`text-[10px] font-black tracking-widest ${myColor} uppercase`}>{myLabel}</p>
                     </div>
                     <p className="text-4xl font-black font-mono mt-1 text-white tracking-tight">
-                        {scores.p1}
+                        {myScore}
                     </p>
-                    {isP1 && <FloatingPoints points={floatingPoints} />}
+                    <FloatingPoints points={floatingPoints} />
                 </div>
 
                 <div className="flex flex-col items-center justify-center border-x border-gray-800/80 px-6">
@@ -65,15 +77,15 @@ export const ScoreBoard: React.FC<ScoreBoardProps> = ({
                     </div>
                 </div>
 
+                {/* 우측 카드: 언제나 상대방 (상대 / OPPONENT) */}
                 <div className="text-center flex-1 relative">
                     <div className="flex items-center justify-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
-                        <p className="text-[10px] font-black tracking-widest text-red-400 uppercase">P2 (상대)</p>
+                        <span className={`w-2 h-2 rounded-full ${opponentPingBg} animate-ping`} />
+                        <p className={`text-[10px] font-black tracking-widest ${opponentColor} uppercase`}>{opponentLabel}</p>
                     </div>
                     <p className="text-4xl font-black font-mono mt-1 text-white tracking-tight">
-                        {scores.p2}
+                        {opponentScore}
                     </p>
-                    {!isP1 && <FloatingPoints points={floatingPoints} />}
                 </div>
             </div>
 
@@ -95,7 +107,7 @@ export const ScoreBoard: React.FC<ScoreBoardProps> = ({
                         {isWinner ? "🎉 승리하셨습니다! 🏆" : "아쉽게 패배하였습니다 😢"}
                     </h2>
                     <p className="text-xs text-gray-400 mb-6 font-medium">
-                        {isWinner ? "1,000점에 먼저 도달하여 매치에서 우승했습니다!" : "상대방이 먼저 1,000점을 획득하였습니다."}
+                        {isWinner ? `${targetScore.toLocaleString()}점에 먼저 도달하여 매치에서 우승했습니다!` : `상대방이 먼저 ${targetScore.toLocaleString()}점을 획득하였습니다.`}
                     </p>
 
                     <div className="flex gap-3 justify-center max-w-sm mx-auto">

@@ -13,6 +13,9 @@ interface RoomWaitingModalProps {
     onStartGame: () => void;
     onExitRoom: () => void;
     showToast: (type: 'success' | 'error' | 'info', msg: string) => void;
+    p1Emoji: string | null;
+    p2Emoji: string | null;
+    onSendEmoji: (emoji: string) => void;
 }
 
 const SUBWAY_TIPS = [
@@ -33,10 +36,12 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
     onToggleReady,
     onStartGame,
     onExitRoom,
-    showToast
+    showToast,
+    p1Emoji,
+    p2Emoji,
+    onSendEmoji
 }) => {
     const [tipIndex, setTipIndex] = useState(0);
-    const [floatingEmoji, setFloatingEmoji] = useState<string | null>(null);
 
     // 5초 간격 TMI 상식 롤링
     useEffect(() => {
@@ -71,20 +76,8 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
         }
     };
 
-    const triggerEmoji = (emoji: string) => {
-        setFloatingEmoji(emoji);
-        setTimeout(() => setFloatingEmoji(null), 1200);
-    };
-
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/90 backdrop-blur-lg p-4 animate-fade-in">
-            {/* 이모지 둥둥 떠오르는 연출 */}
-            {floatingEmoji && (
-                <div className="absolute z-50 text-6xl animate-bounce pointer-events-none drop-shadow-2xl">
-                    {floatingEmoji}
-                </div>
-            )}
-
             <div className="w-full max-w-lg bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden flex flex-col gap-6 animate-card-pop">
                 {/* 상단 은은한 네온 배경 블러 */}
                 <div className="absolute -top-16 -right-16 w-48 h-48 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
@@ -141,6 +134,12 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                     {/* Player 1 (방장) 카드 */}
                     <div className="bg-gray-950/80 border border-amber-400/40 shadow-[0_0_15px_rgba(245,158,11,0.1)] rounded-2xl p-4 flex flex-col items-center justify-center text-center relative">
+                        {p1Emoji && (
+                            <div className="absolute -top-14 bg-gray-900 border border-gray-800 rounded-2xl px-3.5 py-2 shadow-2xl text-2xl animate-bounce z-10 flex items-center justify-center select-none pointer-events-none">
+                                <span className="relative z-10">{p1Emoji}</span>
+                                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-900 border-r border-b border-gray-800 rotate-45" />
+                            </div>
+                        )}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-gray-950 font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1">
                             <Crown className="w-3 h-3 fill-gray-950" /> 방장 {isHost && '(나)'}
                         </div>
@@ -161,6 +160,12 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
                             ? 'border-emerald-500 bg-emerald-950/10 shadow-[0_0_20px_rgba(16,185,129,0.25)]'
                             : 'border-rose-500 bg-rose-950/10 shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-pulse'
                     }`}>
+                        {p2Emoji && (
+                            <div className="absolute -top-14 bg-gray-900 border border-gray-800 rounded-2xl px-3.5 py-2 shadow-2xl text-2xl animate-bounce z-10 flex items-center justify-center select-none pointer-events-none">
+                                <span className="relative z-10">{p2Emoji}</span>
+                                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-900 border-r border-b border-gray-800 rotate-45" />
+                            </div>
+                        )}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gray-800 text-gray-300 font-bold text-[10px] px-2.5 py-0.5 rounded-full border border-gray-700">
                             도전자 {!isHost && '(나)'}
                         </div>
@@ -211,7 +216,7 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
                         {['👋', '🔥', '⚡', '🏆'].map((emoji) => (
                             <button
                                 key={emoji}
-                                onClick={() => triggerEmoji(emoji)}
+                                onClick={() => onSendEmoji(emoji)}
                                 className="w-9 h-9 rounded-xl bg-gray-950 border border-gray-800 hover:border-amber-400/40 text-base flex items-center justify-center active:scale-90 transition-transform"
                                 title="이모지 전송"
                             >

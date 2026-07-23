@@ -34,6 +34,9 @@ export interface LobbyRoom {
     selected_line_ids: number[] | null;
     player_count: number;
     created_at: string;
+    is_private?: boolean;
+    has_password?: boolean;
+    invite_code?: string;
 }
 
 export type GameMode = 'MENU' | 'SINGLE' | 'MULTIPLAYER' | 'LOBBY';

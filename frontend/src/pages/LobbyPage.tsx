@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Zap, PlusCircle, RefreshCw, ArrowLeft, Radio, PlayCircle } from 'lucide-react';
+import { Users, Zap, PlusCircle, RefreshCw, ArrowLeft, Radio, PlayCircle, Lock, Globe, Key } from 'lucide-react';
 import type { LobbyRoom } from '../types';
 import { SUBWAY_LINES } from '../components/common/LineSelectorModal';
 
@@ -9,7 +9,9 @@ interface LobbyPageProps {
     onRefresh: () => void;
     onQuickMatch: () => void;
     onOpenCreateRoom: () => void;
+    onOpenInviteCodeModal: () => void;
     onJoinRoom: (roomId: string) => void;
+    onJoinPrivateRoom: (room: LobbyRoom) => void;
     onBackToMenu: () => void;
 }
 
@@ -19,7 +21,9 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     onRefresh,
     onQuickMatch,
     onOpenCreateRoom,
+    onOpenInviteCodeModal,
     onJoinRoom,
+    onJoinPrivateRoom,
     onBackToMenu
 }) => {
     const waitingCount = lobbies.filter((r) => r.status === 'WAITING').length;
@@ -110,9 +114,22 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                                     >
                                         {/* 상단 뱃지 헤더 */}
                                         <div className="flex items-start justify-between gap-2 mb-3">
-                                            <h3 className="font-bold text-sm text-white line-clamp-1 flex-1 pr-2">
-                                                {room.room_title || '즐거운 스피드 대전 방'}
-                                            </h3>
+                                            <div className="flex flex-col flex-1 pr-2">
+                                                <div className="flex items-center gap-1.5 mb-1">
+                                                    {room.is_private || room.has_password ? (
+                                                        <span className="px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[10px] font-bold flex items-center gap-1 shrink-0">
+                                                            <Lock className="w-2.5 h-2.5" /> 비공개방
+                                                        </span>
+                                                    ) : (
+                                                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold flex items-center gap-1 shrink-0">
+                                                            <Globe className="w-2.5 h-2.5" /> 공개방
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <h3 className="font-bold text-sm text-white line-clamp-1">
+                                                    {room.room_title || '즐거운 스피드 대전 방'}
+                                                </h3>
+                                            </div>
                                             <span
                                                 className={`px-2.5 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
                                                     isWaiting
@@ -155,14 +172,22 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
 
                                             <button
                                                 disabled={!isWaiting || isFull}
-                                                onClick={() => onJoinRoom(room.id)}
+                                                onClick={() => {
+                                                    if (room.is_private || room.has_password) {
+                                                        onJoinPrivateRoom(room);
+                                                    } else {
+                                                        onJoinRoom(room.id);
+                                                    }
+                                                }}
                                                 className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
                                                     isWaiting && !isFull
-                                                        ? 'bg-amber-400 hover:bg-amber-500 text-gray-950 shadow-md shadow-amber-400/20 active:scale-95'
+                                                        ? room.is_private || room.has_password
+                                                            ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/20 active:scale-95'
+                                                            : 'bg-amber-400 hover:bg-amber-500 text-gray-950 shadow-md shadow-amber-400/20 active:scale-95'
                                                         : 'bg-gray-800 text-gray-600 cursor-not-allowed'
                                                 }`}
                                             >
-                                                {isFull ? '입장 불가' : isWaiting ? '입장하기 ⚔️' : '대전 중'}
+                                                {isFull ? '입장 불가' : isWaiting ? (room.is_private || room.has_password ? '🔒 암호 입장' : '입장하기 ⚔️') : '대전 중'}
                                             </button>
                                         </div>
                                     </div>
@@ -172,31 +197,39 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                     )}
                 </div>
 
-                {/* 2. 하단 배치: 액션 컨트롤러 (빠른 자동 매칭 & 커스텀 방 만들기 & 새로고침) */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                {/* 2. 하단 배치: 액션 컨트롤러 (빠른 매칭, 맞춤 방 생성, 초대코드 입장, 새로고침) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                     <button
                         onClick={onQuickMatch}
-                        className="py-4 px-5 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-gray-950 font-black text-sm rounded-2xl shadow-xl shadow-amber-400/10 transition-transform active:scale-98 flex items-center justify-center gap-2 group"
+                        className="py-4 px-4 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-gray-950 font-black text-xs rounded-2xl shadow-xl shadow-amber-400/10 transition-transform active:scale-98 flex items-center justify-center gap-1.5 group"
                     >
-                        <Zap className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                        빠른 자동 매칭 (무작위)
+                        <Zap className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                        빠른 자동 매칭
                     </button>
 
                     <button
                         onClick={onOpenCreateRoom}
-                        className="py-4 px-5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-black text-sm rounded-2xl shadow-xl shadow-blue-500/10 transition-transform active:scale-98 flex items-center justify-center gap-2 group"
+                        className="py-4 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-black text-xs rounded-2xl shadow-xl shadow-blue-500/10 transition-transform active:scale-98 flex items-center justify-center gap-1.5 group"
                     >
-                        <PlusCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <PlusCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
                         맞춤 방 만들기
+                    </button>
+
+                    <button
+                        onClick={onOpenInviteCodeModal}
+                        className="py-4 px-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-black text-xs rounded-2xl shadow-xl shadow-purple-500/10 transition-transform active:scale-98 flex items-center justify-center gap-1.5 group"
+                    >
+                        <Key className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                        🔑 초대 코드로 입장
                     </button>
 
                     <button
                         onClick={onRefresh}
                         disabled={isLoading}
-                        className="py-4 px-5 bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
+                        className="py-4 px-4 bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5 active:scale-98 disabled:opacity-50"
                     >
                         <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-400' : ''}`} />
-                        🔄 방 목록 새로고침
+                        🔄 목록 새로고침
                     </button>
                 </div>
             </div>

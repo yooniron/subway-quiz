@@ -12,6 +12,11 @@ DROP FUNCTION IF EXISTS join_or_create_room(UUID);
 DROP FUNCTION IF EXISTS submit_answer(UUID, UUID, VARCHAR, INT);
 DROP FUNCTION IF EXISTS request_rematch(UUID, UUID);
 DROP FUNCTION IF EXISTS get_single_quiz();
+DROP FUNCTION IF EXISTS get_active_lobbies();
+DROP FUNCTION IF EXISTS create_custom_room(UUID, VARCHAR, INT[]);
+DROP FUNCTION IF EXISTS create_custom_room(UUID, VARCHAR, INT[], BOOLEAN, VARCHAR);
+DROP FUNCTION IF EXISTS join_room_by_code(VARCHAR, UUID);
+DROP FUNCTION IF EXISTS verify_room_password(UUID, VARCHAR);
 
 -- 1. 역 정보 마스터 테이블
 CREATE TABLE stations (
@@ -47,6 +52,9 @@ CREATE TABLE game_rooms (
   p1_score INT DEFAULT 0,
   p2_score INT DEFAULT 0,
   selected_line_ids INT[], -- 선택된 호선 그룹 배열 (옵션 A)
+  is_private BOOLEAN DEFAULT FALSE,
+  password VARCHAR(20) DEFAULT NULL,
+  invite_code VARCHAR(10) UNIQUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   
   -- 현재 실시간 출제된 공통 퀴즈 정보
@@ -194,6 +202,7 @@ BEGIN
       selected_line_ids = p_selected_line_ids 
       OR (p_selected_line_ids IS NULL AND selected_line_ids IS NULL)
     )
+    AND is_private = FALSE
   ORDER BY created_at ASC
   LIMIT 1
   FOR UPDATE;
@@ -216,27 +225,42 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- [RPC 2-1] 맞춤 방 생성 (커스텀 방 제목 + 출제 호선 지정)
+-- [RPC 2-1] 맞춤 방 생성 (커스텀 방 제목 + 출제 호선 지정 + 공개/비공개 + 비밀번호)
 CREATE OR REPLACE FUNCTION create_custom_room(
   p_player_id UUID,
   p_room_title VARCHAR,
-  p_selected_line_ids INT[] DEFAULT NULL
+  p_selected_line_ids INT[] DEFAULT NULL,
+  p_is_private BOOLEAN DEFAULT FALSE,
+  p_password VARCHAR DEFAULT NULL
 )
 RETURNS TABLE (
   room_id UUID,
-  player_role VARCHAR
+  player_role VARCHAR,
+  invite_code VARCHAR
 ) AS $$
 DECLARE
   v_room_id UUID;
   v_title VARCHAR;
+  v_invite_code VARCHAR;
+  v_pass VARCHAR;
 BEGIN
   v_title := COALESCE(NULLIF(trim(p_room_title), ''), '즐거운 지하철 대전 방');
+  v_pass := NULLIF(trim(p_password), '');
   
-  INSERT INTO game_rooms (player_1, status, room_title, selected_line_ids)
-  VALUES (p_player_id, 'WAITING', v_title, p_selected_line_ids)
+  -- 6자리 고유 초대 코드 자동 생성 (예: A8K9F2)
+  v_invite_code := UPPER(SUBSTRING(MD5(RANDOM()::TEXT || NOW()::TEXT) FROM 1 FOR 6));
+
+  INSERT INTO game_rooms (
+    player_1, status, room_title, selected_line_ids,
+    is_private, password, invite_code
+  )
+  VALUES (
+    p_player_id, 'WAITING', v_title, p_selected_line_ids,
+    COALESCE(p_is_private, FALSE), v_pass, v_invite_code
+  )
   RETURNING id INTO v_room_id;
   
-  RETURN QUERY SELECT v_room_id, 'player_1'::VARCHAR;
+  RETURN QUERY SELECT v_room_id, 'player_1'::VARCHAR, v_invite_code;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -275,6 +299,80 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- [RPC 2-2-B] 6자리 초대 코드로 입장
+CREATE OR REPLACE FUNCTION join_room_by_code(
+  p_invite_code VARCHAR,
+  p_player_id UUID
+)
+RETURNS TABLE (
+  room_id UUID,
+  player_role VARCHAR,
+  is_private BOOLEAN,
+  has_password BOOLEAN
+) AS $$
+DECLARE
+  v_room_id UUID;
+  v_p1 UUID;
+  v_p2 UUID;
+  v_status VARCHAR;
+  v_is_private BOOLEAN;
+  v_has_password BOOLEAN;
+  v_code VARCHAR;
+BEGIN
+  v_code := UPPER(trim(p_invite_code));
+  
+  SELECT id, player_1, player_2, status, COALESCE(is_private, FALSE), (password IS NOT NULL AND password != '')
+  INTO v_room_id, v_p1, v_p2, v_status, v_is_private, v_has_password
+  FROM game_rooms
+  WHERE UPPER(invite_code) = v_code FOR UPDATE;
+
+  IF v_room_id IS NULL THEN
+    RAISE EXCEPTION '해당 초대 코드의 방이 존재하지 않습니다.';
+  END IF;
+
+  IF v_status != 'WAITING' THEN
+    RAISE EXCEPTION '이미 대전이 진행 중이거나 종료된 대전방입니다.';
+  END IF;
+
+  IF v_p1 = p_player_id THEN
+    RETURN QUERY SELECT v_room_id, 'player_1'::VARCHAR, v_is_private, v_has_password;
+    RETURN;
+  END IF;
+
+  IF v_p2 = p_player_id THEN
+    RETURN QUERY SELECT v_room_id, 'player_2'::VARCHAR, v_is_private, v_has_password;
+    RETURN;
+  END IF;
+
+  IF v_p2 IS NOT NULL THEN
+    RAISE EXCEPTION '해당 대전방은 이미 정원이 가득 찼습니다.';
+  END IF;
+
+  RETURN QUERY SELECT v_room_id, 'player_2'::VARCHAR, v_is_private, v_has_password;
+END;
+$$ LANGUAGE plpgsql;
+
+-- [RPC 2-2-C] 비공개 방 비밀번호 검증
+CREATE OR REPLACE FUNCTION verify_room_password(
+  p_room_id UUID,
+  p_password VARCHAR
+) RETURNS BOOLEAN AS $$
+DECLARE
+  v_real_password VARCHAR;
+  v_is_private BOOLEAN;
+BEGIN
+  SELECT password, COALESCE(is_private, FALSE) INTO v_real_password, v_is_private
+  FROM game_rooms
+  WHERE id = p_room_id;
+
+  IF NOT v_is_private OR v_real_password IS NULL OR v_real_password = '' THEN
+    RETURN TRUE;
+  END IF;
+
+  RETURN v_real_password = trim(p_password);
+END;
+$$ LANGUAGE plpgsql;
+
 -- [RPC 2-3] 로비 용 실시간 대기방/대전방 목록 조회
 CREATE OR REPLACE FUNCTION get_active_lobbies()
 RETURNS TABLE (
@@ -285,7 +383,10 @@ RETURNS TABLE (
   status VARCHAR,
   selected_line_ids INT[],
   player_count INT,
-  created_at TIMESTAMPTZ
+  created_at TIMESTAMPTZ,
+  is_private BOOLEAN,
+  has_password BOOLEAN,
+  invite_code VARCHAR
 ) AS $$
 BEGIN
   -- 1) 30초 이상 백그라운드 핑이 누락된 유령 방을 CANCELLED 처리로 파기 (자가치유)
@@ -304,7 +405,10 @@ BEGIN
     g.status,
     g.selected_line_ids,
     (CASE WHEN g.player_2 IS NOT NULL THEN 2 WHEN g.player_1 IS NOT NULL THEN 1 ELSE 0 END)::INT AS player_count,
-    g.created_at
+    g.created_at,
+    COALESCE(g.is_private, FALSE) AS is_private,
+    (g.password IS NOT NULL AND g.password != '') AS has_password,
+    g.invite_code
   FROM game_rooms g
   WHERE (
     g.status = 'WAITING' 

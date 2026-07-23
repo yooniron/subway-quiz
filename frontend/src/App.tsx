@@ -10,6 +10,8 @@ import { MultiplayerGamePage } from './pages/MultiplayerGamePage';
 import { LobbyPage } from './pages/LobbyPage';
 import { CreateRoomModal } from './components/common/CreateRoomModal';
 import { RoomWaitingModal } from './components/common/RoomWaitingModal';
+import { PasswordModal } from './components/common/PasswordModal';
+import { InviteCodeModal } from './components/common/InviteCodeModal';
 import { LineSelectorModal, SUBWAY_LINES } from './components/common/LineSelectorModal';
 
 export default function App() {
@@ -36,6 +38,12 @@ export default function App() {
     const [isP2Connected, setIsP2Connected] = useState(false);
     const [isP2Ready, setIsP2Ready] = useState(false);
     const [currentRoomTitle, setCurrentRoomTitle] = useState('스피드 대전 방');
+    const [currentInviteCode, setCurrentInviteCode] = useState<string | undefined>(undefined);
+
+    // 모달 관리 상태 변수
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [targetPrivateRoom, setTargetPrivateRoom] = useState<LobbyRoom | null>(null);
+    const [isInviteCodeModalOpen, setIsInviteCodeModalOpen] = useState(false);
 
     const [userInput, setUserInput] = useState('');
     const [timeLeft, setTimeLeft] = useState(30);
@@ -200,14 +208,21 @@ export default function App() {
         };
     }, [gameMode]);
 
-    const handleCreateCustomRoom = async (roomTitle: string, lines: number[]) => {
+    const handleCreateCustomRoom = async (
+        roomTitle: string,
+        lines: number[],
+        isPrivate: boolean = false,
+        password?: string
+    ) => {
         try {
             setGameMode('MULTIPLAYER');
             setRoomStatus('WAITING');
             const { data, error } = await supabase.rpc('create_custom_room', {
                 p_player_id: myId,
                 p_room_title: roomTitle,
-                p_selected_line_ids: lines
+                p_selected_line_ids: lines,
+                p_is_private: isPrivate,
+                p_password: password
             });
             if (error) {
                 showToast('error', "맞춤 방 생성 에러: " + error.message);
@@ -217,11 +232,83 @@ export default function App() {
             if (data && data.length > 0) {
                 setRoomId(data[0].room_id);
                 setRole(data[0].player_role as any);
-                showToast('success', `'${roomTitle}' 방을 개설하였습니다! 상대 입장을 대기합니다.`);
+                if (data[0].invite_code) {
+                    setCurrentInviteCode(data[0].invite_code);
+                }
+                const privacyText = isPrivate ? "🔒 비공개" : "🌐 공개";
+                showToast('success', `'${roomTitle}' (${privacyText}) 방을 개설하였습니다!`);
             }
         } catch (e: any) {
             showToast('error', "방 생성 중 예외가 발생했습니다.");
             await handleExitRoom();
+        }
+    };
+
+    const handleJoinPrivateRoom = (room: LobbyRoom) => {
+        setTargetPrivateRoom(room);
+        setIsPasswordModalOpen(true);
+    };
+
+    const handleConfirmPasswordJoin = async (password: string) => {
+        if (!targetPrivateRoom) return;
+        try {
+            const { data: isValid, error } = await supabase.rpc('verify_room_password', {
+                p_room_id: targetPrivateRoom.id,
+                p_password: password
+            });
+            if (error) {
+                showToast('error', "비밀번호 검증 중 오류: " + error.message);
+                return;
+            }
+            if (!isValid) {
+                showToast('error', "🔒 방 비밀번호가 일치하지 않습니다.");
+                return;
+            }
+
+            setIsPasswordModalOpen(false);
+            const targetId = targetPrivateRoom.id;
+            setTargetPrivateRoom(null);
+            await handleJoinRoomById(targetId);
+        } catch (e: any) {
+            showToast('error', "비밀번호 확인 중 예외가 발생했습니다.");
+        }
+    };
+
+    const handleJoinByInviteCode = async (code: string) => {
+        try {
+            const { data, error } = await supabase.rpc('join_room_by_code', {
+                p_invite_code: code,
+                p_player_id: myId
+            });
+            if (error) {
+                showToast('error', "초대코드 입장 실패: " + error.message);
+                return;
+            }
+            if (data && data.length > 0) {
+                const roomInfo = data[0];
+                setIsInviteCodeModalOpen(false);
+
+                if (roomInfo.has_password || roomInfo.is_private) {
+                    // 비밀번호 방이면 비밀번호 입력 모달로 전환
+                    setTargetPrivateRoom({
+                        id: roomInfo.room_id,
+                        room_title: '초대 코드 대전방',
+                        player_1: '',
+                        player_2: null,
+                        status: 'WAITING',
+                        selected_line_ids: null,
+                        player_count: 1,
+                        created_at: new Date().toISOString(),
+                        is_private: true,
+                        has_password: true
+                    });
+                    setIsPasswordModalOpen(true);
+                } else {
+                    await handleJoinRoomById(roomInfo.room_id);
+                }
+            }
+        } catch (e: any) {
+            showToast('error', "초대코드 처리 중 예외가 발생했습니다.");
         }
     };
 
@@ -319,6 +406,7 @@ export default function App() {
             setP2RematchReady(false);
             setIsP2Connected(false);
             setIsP2Ready(false);
+            setCurrentInviteCode(undefined);
             setGameMode('MENU');
         }
     };
@@ -542,6 +630,9 @@ export default function App() {
                 setIsP2Connected(!!data.player_2);
                 setIsP2Ready(data.p2_ready || false);
                 setCurrentRoomTitle(data.room_title || '스피드 대전 방');
+                if (data.invite_code) {
+                    setCurrentInviteCode(data.invite_code);
+                }
 
                 if (data.status === 'PLAYING' && data.quiz_target_id) {
                     if (data.quiz_target_id !== prevQuizIdRef.current) {
@@ -600,6 +691,9 @@ export default function App() {
                 setIsP2Connected(!!data.player_2);
                 setIsP2Ready(data.p2_ready || false);
                 setCurrentRoomTitle(data.room_title || '스피드 대전 방');
+                if (data.invite_code) {
+                    setCurrentInviteCode(data.invite_code);
+                }
                 
                 const prevP1 = scoresRef.current.p1;
                 const prevP2 = scoresRef.current.p2;
@@ -829,6 +923,22 @@ export default function App() {
                 onCreateRoom={handleCreateCustomRoom}
             />
 
+            <PasswordModal 
+                isOpen={isPasswordModalOpen}
+                roomTitle={targetPrivateRoom?.room_title || '비공개 대전방'}
+                onClose={() => {
+                    setIsPasswordModalOpen(false);
+                    setTargetPrivateRoom(null);
+                }}
+                onConfirm={handleConfirmPasswordJoin}
+            />
+
+            <InviteCodeModal 
+                isOpen={isInviteCodeModalOpen}
+                onClose={() => setIsInviteCodeModalOpen(false)}
+                onJoinByCode={handleJoinByInviteCode}
+            />
+
             {gameMode === 'MENU' && (
                 <MainMenuPage 
                     onFetchLeaderboard={() => fetchLeaderboard(null)}
@@ -844,7 +954,9 @@ export default function App() {
                     onRefresh={fetchLobbies}
                     onQuickMatch={() => startMatchmakingWithLines(selectedLineIds)}
                     onOpenCreateRoom={() => setIsCreateRoomOpen(true)}
+                    onOpenInviteCodeModal={() => setIsInviteCodeModalOpen(true)}
                     onJoinRoom={handleJoinRoomById}
+                    onJoinPrivateRoom={handleJoinPrivateRoom}
                     onBackToMenu={() => setGameMode('MENU')}
                 />
             )}
@@ -884,6 +996,7 @@ export default function App() {
                             roomId={roomId}
                             roomTitle={currentRoomTitle}
                             selectedLineIds={selectedLineIds}
+                            inviteCode={currentInviteCode}
                             role={role}
                             isP2Connected={isP2Connected}
                             isP2Ready={isP2Ready}

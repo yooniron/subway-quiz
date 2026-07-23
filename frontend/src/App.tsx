@@ -40,6 +40,11 @@ export default function App() {
     const [userInput, setUserInput] = useState('');
     const [timeLeft, setTimeLeft] = useState(30);
 
+    // 실시간 대기실 이모지 상태 및 채널 레퍼런스
+    const [p1Emoji, setP1Emoji] = useState<string | null>(null);
+    const [p2Emoji, setP2Emoji] = useState<string | null>(null);
+    const channelRef = useRef<any>(null);
+
     // 재경기 수락 상태 변수
     const [p1RematchReady, setP1RematchReady] = useState(false);
     const [p2RematchReady, setP2RematchReady] = useState(false);
@@ -633,6 +638,19 @@ export default function App() {
                     }
                 }
             })
+            .on('broadcast', { event: 'emoji' }, ({ payload }) => {
+                const { emoji, senderId } = payload;
+                if (senderId !== myId) {
+                    const isOpponentP1 = roleRef.current === 'player_2';
+                    if (isOpponentP1) {
+                        setP1Emoji(emoji);
+                        setTimeout(() => setP1Emoji(null), 1500);
+                    } else {
+                        setP2Emoji(emoji);
+                        setTimeout(() => setP2Emoji(null), 1500);
+                    }
+                }
+            })
             .on('presence', { event: 'leave' }, async ({ key }) => {
                 // 대전 중(PLAYING) 또는 종료 후 재경기 대기 중(FINISHED)일 때 상대가 방을 완전히 이탈한 경우
                 if (roomStatusRef.current === 'PLAYING' || roomStatusRef.current === 'FINISHED') {
@@ -648,6 +666,8 @@ export default function App() {
                     await handleExitRoom();
                 }
             });
+
+        channelRef.current = channel;
 
         const handleBeforeUnload = () => {
             if (roomId) {
@@ -673,6 +693,7 @@ export default function App() {
             window.removeEventListener('beforeunload', handleBeforeUnload);
             window.removeEventListener('pagehide', handleBeforeUnload);
             supabase.removeChannel(channel);
+            channelRef.current = null;
         };
     }, [roomId, gameMode, myId]);
 
@@ -756,6 +777,24 @@ export default function App() {
             }
         } catch (e: any) {
             showToast('error', "재경기 신청 중 오류가 발생했습니다.");
+        }
+    };
+
+    const sendEmoji = (emoji: string) => {
+        if (channelRef.current) {
+            channelRef.current.send({
+                type: 'broadcast',
+                event: 'emoji',
+                payload: { emoji, senderId: myId }
+            });
+            // 로컬에서도 즉시 트리거
+            if (role === 'player_1') {
+                setP1Emoji(emoji);
+                setTimeout(() => setP1Emoji(null), 1500);
+            } else {
+                setP2Emoji(emoji);
+                setTimeout(() => setP2Emoji(null), 1500);
+            }
         }
     };
 
@@ -852,6 +891,9 @@ export default function App() {
                             onStartGame={handleStartGameByHost}
                             onExitRoom={handleExitRoom}
                             showToast={showToast}
+                            p1Emoji={p1Emoji}
+                            p2Emoji={p2Emoji}
+                            onSendEmoji={sendEmoji}
                         />
                     )}
 

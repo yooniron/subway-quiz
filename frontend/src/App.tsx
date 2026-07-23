@@ -84,10 +84,11 @@ export default function App() {
     const [isLineSelectorOpen, setIsLineSelectorOpen] = useState(false);
     const [targetMode, setTargetMode] = useState<'SINGLE' | 'MULTIPLAYER' | null>(null);
 
-    // 로비 관련 상태 변수들
+    // 로비 및 대전방 세부 설정 관련 상태 변수들
     const [lobbies, setLobbies] = useState<LobbyRoom[]>([]);
     const [isLobbyLoading, setIsLobbyLoading] = useState(false);
     const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false);
+    const [currentTargetScore, setCurrentTargetScore] = useState<number>(500);
 
     // 인풋창 포커스 유지를 위한 ref
     const inputRef = useRef<HTMLInputElement | null>(null);
@@ -212,17 +213,20 @@ export default function App() {
         roomTitle: string,
         lines: number[],
         isPrivate: boolean = false,
-        password?: string
+        password?: string,
+        targetScore: number = 500
     ) => {
         try {
             setGameMode('MULTIPLAYER');
             setRoomStatus('WAITING');
+            setCurrentTargetScore(targetScore);
             const { data, error } = await supabase.rpc('create_custom_room', {
                 p_player_id: myId,
                 p_room_title: roomTitle,
                 p_selected_line_ids: lines,
                 p_is_private: isPrivate,
-                p_password: password
+                p_password: password,
+                p_target_score: targetScore
             });
             if (error) {
                 showToast('error', "맞춤 방 생성 에러: " + error.message);
@@ -644,6 +648,9 @@ export default function App() {
                 setIsP2Connected(!!data.player_2);
                 setIsP2Ready(data.p2_ready || false);
                 setCurrentRoomTitle(data.room_title || '스피드 대전 방');
+                if (data.target_score) {
+                    setCurrentTargetScore(data.target_score);
+                }
                 if (data.invite_code) {
                     setCurrentInviteCode(data.invite_code);
                 }
@@ -678,6 +685,9 @@ export default function App() {
             }, async (payload) => {
                 const data = payload.new;
                 if (!data) return;
+                if (data.target_score) {
+                    setCurrentTargetScore(data.target_score);
+                }
 
                 // 1) 방장이 나가서 내가 새 방장으로 승격된 경우 (Host Migration)
                 if (data.player_1 === myId && roleRef.current !== 'player_1') {

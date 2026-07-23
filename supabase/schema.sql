@@ -51,6 +51,7 @@ CREATE TABLE game_rooms (
   status VARCHAR(20) DEFAULT 'WAITING', 
   p1_score INT DEFAULT 0,
   p2_score INT DEFAULT 0,
+  target_score INT DEFAULT 500, -- 승리 목표 점수 (기본값: 500점)
   selected_line_ids INT[], -- 선택된 호선 그룹 배열 (옵션 A)
   is_private BOOLEAN DEFAULT FALSE,
   password VARCHAR(20) DEFAULT NULL,
@@ -231,7 +232,8 @@ CREATE OR REPLACE FUNCTION create_custom_room(
   p_room_title VARCHAR,
   p_selected_line_ids INT[] DEFAULT NULL,
   p_is_private BOOLEAN DEFAULT FALSE,
-  p_password VARCHAR DEFAULT NULL
+  p_password VARCHAR DEFAULT NULL,
+  p_target_score INT DEFAULT 500
 )
 RETURNS TABLE (
   room_id UUID,
@@ -243,20 +245,22 @@ DECLARE
   v_title VARCHAR;
   v_invite_code VARCHAR;
   v_pass VARCHAR;
+  v_target INT;
 BEGIN
   v_title := COALESCE(NULLIF(trim(p_room_title), ''), '즐거운 지하철 대전 방');
   v_pass := NULLIF(trim(p_password), '');
+  v_target := COALESCE(p_target_score, 500);
   
   -- 6자리 고유 초대 코드 자동 생성 (예: A8K9F2)
   v_invite_code := UPPER(SUBSTRING(MD5(RANDOM()::TEXT || NOW()::TEXT) FROM 1 FOR 6));
 
   INSERT INTO game_rooms (
     player_1, status, room_title, selected_line_ids,
-    is_private, password, invite_code
+    is_private, password, invite_code, target_score
   )
   VALUES (
     p_player_id, 'WAITING', v_title, p_selected_line_ids,
-    COALESCE(p_is_private, FALSE), v_pass, v_invite_code
+    COALESCE(p_is_private, FALSE), v_pass, v_invite_code, v_target
   )
   RETURNING id INTO v_room_id;
   
@@ -386,7 +390,8 @@ RETURNS TABLE (
   created_at TIMESTAMPTZ,
   is_private BOOLEAN,
   has_password BOOLEAN,
-  invite_code VARCHAR
+  invite_code VARCHAR,
+  target_score INT
 ) AS $$
 BEGIN
   -- 1) 90초 이상 백그라운드 핑이 누락된 유령 방을 CANCELLED 처리로 파기 (자가치유, 백그라운드 탭 스로틀링 방지)
@@ -408,7 +413,8 @@ BEGIN
     g.created_at,
     COALESCE(g.is_private, FALSE) AS is_private,
     (g.password IS NOT NULL AND g.password != '') AS has_password,
-    g.invite_code
+    g.invite_code,
+    COALESCE(g.target_score, 500)::INT AS target_score
   FROM game_rooms g
   WHERE (
     g.status = 'WAITING' 

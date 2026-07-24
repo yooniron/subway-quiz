@@ -1,5 +1,7 @@
 # 🚇 Subway Quiz (실시간 지하철 퀴즈 대전 플랫폼)
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-subway--quiz.vercel.app-00C73C?style=for-the-badge&logo=vercel&logoColor=white)](https://subway-quiz.vercel.app/)
+
 실시간 지하철 노선 네트워크 구조를 활용하여 1대1로 마주 보며 선착순으로 정답을 외쳐 점수를 획득하는 **양방향 실시간 스피드 경쟁 퀴즈 게임**입니다. 
 
 ![Subway Quiz Main Menu](./main_menu.png)

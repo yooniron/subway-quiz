@@ -5,7 +5,7 @@ import { SUBWAY_LINES } from './LineSelectorModal';
 interface CreateRoomModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onCreateRoom: (roomTitle: string, selectedLineIds: number[], isPrivate: boolean, password?: string) => void;
+    onCreateRoom: (roomTitle: string, selectedLineIds: number[], isPrivate: boolean, password?: string, targetScore?: number) => void;
 }
 
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
@@ -17,6 +17,8 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     const [selectedLineIds, setSelectedLineIds] = useState<number[]>(() => SUBWAY_LINES.map(l => l.id));
     const [isPrivate, setIsPrivate] = useState(false);
     const [password, setPassword] = useState('');
+    const [targetScorePreset, setTargetScorePreset] = useState<'300' | '500' | '1000' | 'CUSTOM'>('500');
+    const [customScoreInput, setCustomScoreInput] = useState('700');
 
     if (!isOpen) return null;
 
@@ -47,7 +49,21 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const cleanTitle = roomTitle.trim() || '즐거운 지하철 퀴즈 대전';
-        onCreateRoom(cleanTitle, selectedLineIds, isPrivate, isPrivate ? password.trim() : '');
+
+        let finalTargetScore = 500;
+        if (targetScorePreset === '300') finalTargetScore = 300;
+        else if (targetScorePreset === '500') finalTargetScore = 500;
+        else if (targetScorePreset === '1000') finalTargetScore = 1000;
+        else if (targetScorePreset === 'CUSTOM') {
+            const parsed = parseInt(customScoreInput.trim(), 10);
+            if (!isNaN(parsed) && parsed >= 100 && parsed <= 5000) {
+                finalTargetScore = parsed;
+            } else {
+                finalTargetScore = 500;
+            }
+        }
+
+        onCreateRoom(cleanTitle, selectedLineIds, isPrivate, isPrivate ? password.trim() : '', finalTargetScore);
         onClose();
     };
 
@@ -83,6 +99,78 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                             placeholder="예: 2호선 고수 모십니다!"
                             className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-400 transition-colors"
                         />
+                    </div>
+
+                    {/* 승리 목표 점수 지정 (300 / 500 / 1000 / 커스텀 직접 입력) */}
+                    <div>
+                        <label className="block text-xs font-bold text-gray-300 mb-1.5 flex items-center justify-between">
+                            <span>🎯 승리 목표 점수</span>
+                            <span className="text-[11px] text-amber-400 font-mono font-bold">
+                                {targetScorePreset === 'CUSTOM' ? `${customScoreInput || 500}pts` : `${targetScorePreset}pts`}
+                            </span>
+                        </label>
+                        <div className="grid grid-cols-4 gap-1 p-1 bg-gray-950 rounded-xl border border-gray-800 mb-1.5">
+                            <button
+                                type="button"
+                                onClick={() => setTargetScorePreset('300')}
+                                className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                    targetScorePreset === '300'
+                                        ? 'bg-amber-400 text-gray-950 shadow-md font-black'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                ⚡ 300점
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setTargetScorePreset('500')}
+                                className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                    targetScorePreset === '500'
+                                        ? 'bg-amber-400 text-gray-950 shadow-md font-black'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                🎯 500점
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setTargetScorePreset('1000')}
+                                className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                    targetScorePreset === '1000'
+                                        ? 'bg-amber-400 text-gray-950 shadow-md font-black'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                👑 1000점
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setTargetScorePreset('CUSTOM')}
+                                className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                    targetScorePreset === 'CUSTOM'
+                                        ? 'bg-amber-400 text-gray-950 shadow-md font-black'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                ⚙️ 커스텀
+                            </button>
+                        </div>
+
+                        {targetScorePreset === 'CUSTOM' && (
+                            <div className="animate-fade-in pt-1">
+                                <input
+                                    type="number"
+                                    min={100}
+                                    max={5000}
+                                    step={100}
+                                    value={customScoreInput}
+                                    onChange={(e) => setCustomScoreInput(e.target.value)}
+                                    placeholder="목표 점수 직접 입력 (100~5000점)..."
+                                    className="w-full px-3.5 py-2 bg-gray-950 border border-amber-400/50 rounded-xl text-xs text-amber-400 font-mono font-bold placeholder-gray-600 focus:outline-none focus:border-amber-400"
+                                />
+                                <p className="text-[10px] text-gray-500 mt-1">※ 100점 ~ 5,000점 사이에서 자유롭게 입력할 수 있습니다.</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* 공개 / 비공개 설정 스위치 */}

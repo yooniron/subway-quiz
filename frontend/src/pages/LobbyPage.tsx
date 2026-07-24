@@ -118,13 +118,16 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                                                 <div className="flex items-center gap-1.5 mb-1">
                                                     {room.is_private || room.has_password ? (
                                                         <span className="px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[10px] font-bold flex items-center gap-1 shrink-0">
-                                                            <Lock className="w-2.5 h-2.5" /> 비공개방
+                                                            <Lock className="w-2.5 h-2.5" /> 비공개
                                                         </span>
                                                     ) : (
                                                         <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold flex items-center gap-1 shrink-0">
-                                                            <Globe className="w-2.5 h-2.5" /> 공개방
+                                                            <Globe className="w-2.5 h-2.5" /> 공개
                                                         </span>
                                                     )}
+                                                    <span className="px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/30 text-purple-300 text-[10px] font-bold shrink-0">
+                                                        🎯 {room.target_score || 500}pts
+                                                    </span>
                                                 </div>
                                                 <h3 className="font-bold text-sm text-white line-clamp-1">
                                                     {room.room_title || '즐거운 스피드 대전 방'}

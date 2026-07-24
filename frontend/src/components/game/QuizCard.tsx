@@ -1,6 +1,7 @@
 import React from 'react';
-import { Home, Lightbulb } from 'lucide-react';
+import { Home, Lightbulb, FastForward } from 'lucide-react';
 import type { Quiz } from '../../types';
+import { getChoseong } from '../../utils/hangul';
 
 interface QuizCardProps {
     quiz: Quiz;
@@ -11,9 +12,13 @@ interface QuizCardProps {
     isHintActive?: boolean;
     onUseHint?: () => void;
     // 멀티 힌트 조건용 (남은 시간 기반)
+    timeLeft?: number;
     showL1?: boolean;
     showL2?: boolean;
     showHintChar?: boolean;
+    passCount?: number;
+    isPassRequested?: boolean;
+    onPassRequest?: () => void;
 }
 
 export const QuizCard: React.FC<QuizCardProps> = ({
@@ -23,11 +28,15 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     hintCount = 0,
     isHintActive = false,
     onUseHint,
+    timeLeft = 30,
     showL1 = true,
     showL2 = true,
-    showHintChar = false
+    showHintChar = false,
+    passCount = 0,
+    isPassRequested = false,
+    onPassRequest
 }) => {
-    // 초성 힌트 마스킹 헬퍼 함수
+    // 2단계 스피드 빌드업 힌트 마스킹 헬퍼 함수
     const getAnswerPlaceholder = () => {
         if (mode === 'SINGLE') {
             if (isHintActive && quiz.target_station_name) {
@@ -38,7 +47,14 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             }
             return '?';
         } else {
-            if (showHintChar && quiz.target_station_name) {
+            // MULTIPLAYER 2단계 스피드 빌드업
+            if (timeLeft <= 3 && quiz.target_station_name) {
+                // 3초 ~ 1초: 🚨 정답 전체 대공개 (스피드 키보드 타격전)
+                return quiz.target_station_name;
+            } else if (timeLeft <= 10 && quiz.target_station_name) {
+                // 10초 ~ 4초: ✨ 초성 힌트 대공개
+                return getChoseong(quiz.target_station_name);
+            } else if (showHintChar && quiz.target_station_name) {
                 const targetName = quiz.target_station_name.replace(/역$/, '');
                 const firstChar = targetName.charAt(0);
                 const restLength = targetName.length - 1;
@@ -50,6 +66,9 @@ export const QuizCard: React.FC<QuizCardProps> = ({
 
     const isL1Visible = mode === 'SINGLE' ? true : showL1;
     const isL2Visible = mode === 'SINGLE' ? true : showL2;
+
+    const isFullReveal = mode === 'MULTIPLAYER' && timeLeft <= 3;
+    const isChoseongReveal = mode === 'MULTIPLAYER' && timeLeft > 3 && timeLeft <= 10;
 
     return (
         <div 
@@ -89,7 +108,19 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                         <Lightbulb className="w-4 h-4" /> 힌트 ({hintCount})
                     </button>
                 ) : (
-                    <div className="w-16" />
+                    <button
+                        onClick={onPassRequest}
+                        disabled={isPassRequested}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1 transition-all ${
+                            isPassRequested
+                                ? 'bg-purple-500/20 border-purple-500/40 text-purple-300 shadow-xs'
+                                : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-amber-400 hover:border-amber-400/40'
+                        }`}
+                        title="양쪽 동의 시 다음 문제로 빠른 스킵"
+                    >
+                        <FastForward className="w-3.5 h-3.5" />
+                        <span>패스 ({passCount}/2)</span>
+                    </button>
                 )}
             </div>
 
@@ -107,10 +138,24 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                 </div>
 
                 <div className="flex flex-col items-center w-1/5">
-                    <div className="w-14 h-14 rounded-full border-4 border-yellow-400 bg-white flex items-center justify-center animate-bounce shadow-[0_0_20px_rgba(250,204,21,0.5)]">
-                        <span className="text-gray-950 font-black text-lg">{getAnswerPlaceholder()}</span>
+                    <div className={`rounded-full border-4 flex items-center justify-center transition-all duration-300 ${
+                        isFullReveal
+                            ? 'w-20 h-14 px-3 border-red-500 bg-red-950/90 text-white animate-pulse shadow-[0_0_25px_rgba(239,68,68,0.8)]'
+                            : isChoseongReveal
+                            ? 'w-16 h-14 border-amber-400 bg-amber-950/90 text-amber-300 animate-bounce shadow-[0_0_20px_rgba(245,158,11,0.6)]'
+                            : 'w-14 h-14 border-yellow-400 bg-white text-gray-950 animate-bounce shadow-[0_0_20px_rgba(250,204,21,0.5)]'
+                    }`}>
+                        <span className={`font-black tracking-tight ${
+                            isFullReveal ? 'text-sm text-red-300 font-mono' : isChoseongReveal ? 'text-sm text-amber-300 font-mono' : 'text-lg text-gray-950'
+                        }`}>
+                            {getAnswerPlaceholder()}
+                        </span>
                     </div>
-                    <span className="mt-2 text-xs font-black text-yellow-400 tracking-wider">[ 정답 ]</span>
+                    <span className={`mt-2 text-xs font-black tracking-wider ${
+                        isFullReveal ? 'text-red-400 animate-pulse' : isChoseongReveal ? 'text-amber-400' : 'text-yellow-400'
+                    }`}>
+                        {isFullReveal ? '[ 🚨 정답 공개! ]' : isChoseongReveal ? '[ ✨ 초성 힌트 ]' : '[ 정답 ]'}
+                    </span>
                 </div>
 
                 <div className={`flex flex-col items-center w-1/5 transition-all ${isL1Visible ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>

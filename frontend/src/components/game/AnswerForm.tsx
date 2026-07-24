@@ -33,14 +33,14 @@ export const AnswerForm: React.FC<AnswerFormProps> = ({
                 value={userInput}
                 onChange={onChange}
                 placeholder={placeholder}
-                className={`flex-1 px-4 sm:px-5 py-3.5 sm:py-4 min-h-[48px] rounded-xl bg-gray-950 border border-gray-800 text-white text-base sm:text-lg font-bold placeholder:text-gray-600 focus:outline-none focus:border-yellow-400 focus:shadow-[0_0_15px_rgba(250,204,21,0.25)] transition-all duration-300 ${
-                    isShaking ? 'animate-shake border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)] text-red-400' : ''
+                className={`flex-1 px-4 sm:px-5 py-3.5 sm:py-4 min-h-[48px] rounded-2xl bg-gray-950 border-2 border-gray-800 text-white text-base sm:text-lg font-bold placeholder:text-gray-600 focus:outline-none focus:border-emerald-400 focus:shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all duration-300 ${
+                    isShaking ? 'animate-shake border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] text-red-400' : ''
                 }`}
             />
             <button 
                 type="submit"
                 disabled={disabled}
-                className="px-5 sm:px-6 py-3.5 sm:py-4 min-h-[48px] bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-black rounded-xl transition-all transform active:scale-95 shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-5 sm:px-6 py-3.5 sm:py-4 min-h-[48px] bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-2xl transition-all transform active:scale-95 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <Send className="w-5 h-5"/>
             </button>

@@ -78,94 +78,132 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-20" style={{ backgroundColor: quiz.color_code }} />
             <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full blur-3xl opacity-20" style={{ backgroundColor: quiz.color_code }} />
 
-            <div className="flex justify-between items-center mb-6">
-                <button 
-                    onClick={onExit}
-                    className="p-2 rounded-xl bg-gray-950 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-700 transition-all flex items-center gap-1 text-xs font-bold"
-                >
-                    <Home className="w-4 h-4" /> {mode === 'SINGLE' ? '메뉴' : '기권 및 메뉴'}
-                </button>
-
-                <span 
-                    className="px-6 py-2 rounded-full font-black text-sm text-white tracking-widest shadow-lg"
-                    style={{ backgroundColor: quiz.color_code }}
-                >
-                    {quiz.line_name}
-                </span>
-
-                {mode === 'SINGLE' ? (
+            {/* 상단 서울교통공사 스타일 LCD 엠블럼 & 노선 띠 헤더 */}
+            <div 
+                className="flex justify-between items-center px-4 py-2 rounded-2xl mb-6 shadow-md border border-white/10"
+                style={{ backgroundColor: quiz.color_code }}
+            >
+                <div className="flex items-center gap-2">
                     <button 
-                        onClick={onUseHint}
-                        disabled={hintCount <= 0 || isHintActive}
-                        className={`px-3 py-2 rounded-xl border text-xs font-black flex items-center gap-1.5 transition-all ${
-                            isHintActive 
-                                ? 'bg-yellow-400/20 border-yellow-400/50 text-yellow-300' 
-                                : hintCount > 0 
-                                ? 'bg-gray-950 border-yellow-500/50 text-yellow-400 hover:bg-yellow-400/10' 
-                                : 'bg-gray-950 border-gray-800 text-gray-600 opacity-50 cursor-not-allowed'
-                        }`}
+                        onClick={onExit}
+                        className="p-1.5 rounded-lg bg-black/30 hover:bg-black/50 text-white transition-all flex items-center gap-1 text-xs font-bold"
                     >
-                        <Lightbulb className="w-4 h-4" /> 힌트 ({hintCount})
+                        <Home className="w-3.5 h-3.5" /> {mode === 'SINGLE' ? '메뉴' : '기권'}
                     </button>
-                ) : (
-                    <button
-                        onClick={onPassRequest}
-                        disabled={isPassRequested}
-                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1 transition-all ${
-                            isPassRequested
-                                ? 'bg-purple-500/20 border-purple-500/40 text-purple-300 shadow-xs'
-                                : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-amber-400 hover:border-amber-400/40'
-                        }`}
-                        title="양쪽 동의 시 다음 문제로 빠른 스킵"
-                    >
-                        <FastForward className="w-3.5 h-3.5" />
-                        <span>패스 ({passCount}/2)</span>
-                    </button>
-                )}
-            </div>
-
-            <div className="relative flex items-center justify-between w-full px-1 sm:px-2 py-6 sm:py-8 mb-6 sm:mb-8">
-                <div className="absolute left-0 right-0 h-2.5 sm:h-3 -z-10 rounded-full transition-all duration-300" style={{ backgroundColor: quiz.color_code, top: '38%' }} />
-                
-                <div className={`flex flex-col items-center w-1/5 transition-all ${isL2Visible ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 sm:border-4 border-white bg-gray-950" />
-                    <span className="mt-1.5 text-[10px] sm:text-xs font-bold text-center break-keep-all leading-tight max-w-[60px] sm:max-w-none">{isL2Visible ? quiz.left_2 : '?'}</span>
-                </div>
-                
-                <div className={`flex flex-col items-center w-1/5 transition-all ${isL1Visible ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 sm:border-4 border-white bg-gray-950" />
-                    <span className="mt-1.5 text-[10px] sm:text-xs font-bold text-center break-keep-all leading-tight max-w-[60px] sm:max-w-none">{isL1Visible ? quiz.left_1 : '?'}</span>
-                </div>
-
-                <div className="flex flex-col items-center w-1/5">
-                    <div className={`rounded-full border-4 flex items-center justify-center transition-all duration-300 ${
-                        isFullReveal
-                            ? 'w-16 h-12 sm:w-20 sm:h-14 px-2 sm:px-3 border-red-500 bg-red-950/90 text-white animate-pulse shadow-[0_0_25px_rgba(239,68,68,0.8)]'
-                            : isChoseongReveal
-                            ? 'w-14 h-12 sm:w-16 sm:h-14 border-amber-400 bg-amber-950/90 text-amber-300 animate-bounce shadow-[0_0_20px_rgba(245,158,11,0.6)]'
-                            : 'w-12 h-12 sm:w-14 sm:h-14 border-yellow-400 bg-white text-gray-950 animate-bounce shadow-[0_0_20px_rgba(250,204,21,0.5)]'
-                    }`}>
-                        <span className={`font-black tracking-tight ${
-                            isFullReveal ? 'text-xs sm:text-sm text-red-300 font-mono' : isChoseongReveal ? 'text-xs sm:text-sm text-amber-300 font-mono' : 'text-base sm:text-lg text-gray-950'
-                        }`}>
-                            {getAnswerPlaceholder()}
-                        </span>
-                    </div>
-                    <span className={`mt-1.5 text-[10px] sm:text-xs font-black tracking-wider ${
-                        isFullReveal ? 'text-red-400 animate-pulse' : isChoseongReveal ? 'text-amber-400' : 'text-yellow-400'
-                    }`}>
-                        {isFullReveal ? '[ 🚨 정답! ]' : isChoseongReveal ? '[ ✨ 초성 ]' : '[ 정답 ]'}
+                    <span className="text-xs font-black tracking-widest text-white flex items-center gap-1">
+                        <span className="w-5 h-5 rounded-full bg-white text-gray-950 flex items-center justify-center text-[10px] font-black">S</span>
+                        Subway Quiz
                     </span>
                 </div>
 
-                <div className={`flex flex-col items-center w-1/5 transition-all ${isL1Visible ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 sm:border-4 border-white bg-gray-950" />
-                    <span className="mt-1.5 text-[10px] sm:text-xs font-bold text-center break-keep-all leading-tight max-w-[60px] sm:max-w-none">{isL1Visible ? quiz.right_1 : '?'}</span>
+                <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-black/30 rounded-full text-xs font-black text-white tracking-widest border border-white/20">
+                        {quiz.line_name} 순환
+                    </span>
+                    {mode === 'SINGLE' ? (
+                        <button 
+                            onClick={onUseHint}
+                            disabled={hintCount <= 0 || isHintActive}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1 transition-all ${
+                                isHintActive 
+                                    ? 'bg-yellow-400 text-gray-950' 
+                                    : hintCount > 0 
+                                    ? 'bg-black/30 text-yellow-300 hover:bg-black/50' 
+                                    : 'bg-black/20 text-gray-400 opacity-50 cursor-not-allowed'
+                            }`}
+                        >
+                            <Lightbulb className="w-3.5 h-3.5" /> 힌트({hintCount})
+                        </button>
+                    ) : (
+                        <button
+                            onClick={onPassRequest}
+                            disabled={isPassRequested}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                                isPassRequested
+                                    ? 'bg-purple-900/80 text-purple-200'
+                                    : 'bg-black/30 text-white hover:bg-black/50'
+                            }`}
+                        >
+                            <FastForward className="w-3.5 h-3.5" /> 패스({passCount}/2)
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* 중앙 '이번역' 서울교통공사 LCD 퀴즈 디스플레이 */}
+            <div className="flex flex-col items-center justify-center my-4 py-4 relative">
+                <span className="text-xs sm:text-sm font-bold text-gray-400 tracking-widest uppercase mb-1">
+                    이번역
+                </span>
+
+                <div className="flex items-center justify-center gap-3 sm:gap-4 my-2">
+                    {/* 동그란 호선 역 번호 버블 (예: 239) */}
+                    <div 
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-black text-sm sm:text-base shadow-lg border-2 border-white/40"
+                        style={{ backgroundColor: quiz.color_code }}
+                    >
+                        {quiz.target_station_id ? String(quiz.target_station_id).slice(-3) : '239'}
+                    </div>
+
+                    {/* 메인 큼직한 정답 타겟 (홍대입구) */}
+                    <div className={`px-4 py-2 sm:px-6 sm:py-3 rounded-2xl border-2 flex items-center justify-center transition-all ${
+                        isFullReveal 
+                            ? 'bg-red-950/80 border-red-500 text-red-300 animate-pulse' 
+                            : isChoseongReveal 
+                            ? 'bg-amber-950/80 border-amber-400 text-amber-300 animate-bounce' 
+                            : 'bg-gray-950 border-gray-700 text-white'
+                    }`}>
+                        <span className="text-2xl sm:text-4xl font-black tracking-tight drop-shadow-md">
+                            {getAnswerPlaceholder()}
+                        </span>
+                    </div>
                 </div>
 
-                <div className={`flex flex-col items-center w-1/5 transition-all ${isL2Visible ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 sm:border-4 border-white bg-gray-950" />
-                    <span className="mt-1.5 text-[10px] sm:text-xs font-bold text-center break-keep-all leading-tight max-w-[60px] sm:max-w-none">{isL2Visible ? quiz.right_2 : '?'}</span>
+                <span className="text-[11px] sm:text-xs text-gray-500 font-mono mt-1 tracking-wider">
+                    {isFullReveal ? '🚨 정답 대공개!' : isChoseongReveal ? '✨ 초성 힌트' : 'Subway Station Quiz'}
+                </span>
+            </div>
+
+            {/* 하단 5개 역 노선 트랙 & '<<<<' 열차 진입 진행 화살표 애니메이션 */}
+            <div className="relative flex items-center justify-between w-full px-1 sm:px-2 py-6 sm:py-8 mt-4">
+                <div 
+                    className="absolute left-0 right-0 h-3 -z-10 rounded-full transition-all duration-300" 
+                    style={{ backgroundColor: quiz.color_code, top: '35%' }} 
+                />
+                
+                <div className={`flex flex-col items-center w-1/5 transition-all ${isL2Visible ? 'opacity-100' : 'opacity-20 blur-xs'}`}>
+                    <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full border-2 sm:border-4 border-white bg-gray-950" />
+                    <span className="mt-2 text-[10px] sm:text-xs font-bold text-center break-keep-all leading-tight max-w-[60px] sm:max-w-none">{isL2Visible ? quiz.left_2 : '?'}</span>
+                </div>
+                
+                <div className={`flex flex-col items-center w-1/5 transition-all ${isL1Visible ? 'opacity-100' : 'opacity-20 blur-xs'}`}>
+                    <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full border-2 sm:border-4 border-white bg-gray-950" />
+                    <span className="mt-2 text-[10px] sm:text-xs font-bold text-center break-keep-all leading-tight max-w-[60px] sm:max-w-none">{isL1Visible ? quiz.left_1 : '?'}</span>
+                </div>
+
+                {/* 중앙 정답 타겟 노드 + 진입 화살표 (<<<<) */}
+                <div className="flex flex-col items-center w-1/5 relative">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                        <span className="text-[10px] sm:text-xs font-black text-yellow-400 animate-pulse tracking-tighter">
+                            &lt;&lt;&lt;&lt;
+                        </span>
+                    </div>
+                    <div 
+                        className="w-7 h-7 sm:w-9 sm:h-9 rounded-full border-4 border-yellow-400 bg-white text-gray-950 font-black text-xs flex items-center justify-center animate-bounce shadow-[0_0_15px_rgba(250,204,21,0.6)]"
+                    >
+                        ?
+                    </div>
+                    <span className="mt-1.5 text-[10px] sm:text-xs font-black text-yellow-400">[ 정답 ]</span>
+                </div>
+
+                <div className={`flex flex-col items-center w-1/5 transition-all ${isL1Visible ? 'opacity-100' : 'opacity-20 blur-xs'}`}>
+                    <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full border-2 sm:border-4 border-white bg-gray-950" />
+                    <span className="mt-2 text-[10px] sm:text-xs font-bold text-center break-keep-all leading-tight max-w-[60px] sm:max-w-none">{isL1Visible ? quiz.right_1 : '?'}</span>
+                </div>
+
+                <div className={`flex flex-col items-center w-1/5 transition-all ${isL2Visible ? 'opacity-100' : 'opacity-20 blur-xs'}`}>
+                    <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full border-2 sm:border-4 border-white bg-gray-950" />
+                    <span className="mt-2 text-[10px] sm:text-xs font-bold text-center break-keep-all leading-tight max-w-[60px] sm:max-w-none">{isL2Visible ? quiz.right_2 : '?'}</span>
                 </div>
             </div>
         </div>

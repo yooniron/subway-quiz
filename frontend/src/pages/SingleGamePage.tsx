@@ -84,10 +84,10 @@ export const SingleGamePage: React.FC<SingleGamePageProps> = ({
 
                     <AnswerForm 
                         userInput={userInput}
-                        isInputShaking={isInputShaking}
+                        onChange={onInputChange}
+                        onSubmit={onAnswerSubmit}
+                        isShaking={isInputShaking}
                         inputRef={inputRef}
-                        onInputChange={onInputChange}
-                        onAnswerSubmit={onAnswerSubmit}
                         colorCode={singleQuiz.color_code}
                     />
 

@@ -165,14 +165,13 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                         <span 
                             className={`font-black tracking-tight drop-shadow-md text-2xl sm:text-5xl md:text-6xl ${
                                 isTypingActive
-                                    ? 'animate-pulse'
+                                    ? 'text-yellow-400 animate-pulse'
                                     : isFullReveal 
                                     ? 'text-red-400 animate-pulse' 
                                     : isChoseongReveal 
                                     ? 'text-cyan-300 animate-pulse' 
                                     : 'text-yellow-400'
                             }`}
-                            style={isTypingActive ? { color: quiz.color_code, textShadow: `0 0 25px ${quiz.color_code}` } : undefined}
                         >
                             {getAnswerPlaceholder()}
                         </span>

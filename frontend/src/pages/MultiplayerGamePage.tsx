@@ -22,9 +22,13 @@ interface MultiplayerGamePageProps {
     showL1: boolean;
     showL2: boolean;
     showHintChar: boolean;
-    // Rematch 관련
+    // Rematch 및 패스 관련
     p1RematchReady: boolean;
     p2RematchReady: boolean;
+    targetScore?: number;
+    passCount?: number;
+    isPassRequested?: boolean;
+    onPassRequest?: () => void;
     // 이벤트 핸들러
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onAnswerSubmit: (e: React.FormEvent) => void;
@@ -50,6 +54,10 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
     showHintChar,
     p1RematchReady,
     p2RematchReady,
+    targetScore = 500,
+    passCount = 0,
+    isPassRequested = false,
+    onPassRequest,
     onInputChange,
     onAnswerSubmit,
     onExitRoom,
@@ -60,7 +68,7 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
         return null;
     }
 
-    const isGameOver = roomStatus === 'FINISHED' || scores.p1 >= 1000 || scores.p2 >= 1000;
+    const isGameOver = roomStatus === 'FINISHED' || scores.p1 >= targetScore || scores.p2 >= targetScore;
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 px-4 text-white font-sans relative overflow-hidden">
@@ -73,6 +81,7 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
                 timeLeft={timeLeft}
                 floatingPoints={floatingPoints}
                 isShaking={isShaking}
+                targetScore={targetScore}
                 p1RematchReady={p1RematchReady}
                 p2RematchReady={p2RematchReady}
                 onRematchRequest={onRematchRequest}
@@ -85,9 +94,13 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
                         quiz={quiz}
                         mode="MULTIPLAYER"
                         onExit={onExitRoom}
+                        timeLeft={timeLeft}
                         showL1={showL1}
                         showL2={showL2}
                         showHintChar={showHintChar}
+                        passCount={passCount}
+                        isPassRequested={isPassRequested}
+                        onPassRequest={onPassRequest}
                     />
 
                     <AnswerForm 
@@ -101,7 +114,7 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
                     />
 
                     <div className="mt-4 text-center">
-                        <p className="text-xs text-gray-500 font-mono">⚡ 1,000점에 먼저 달성하는 유저가 즉시 우승합니다!</p>
+                        <p className="text-xs text-gray-500 font-mono">⚡ {targetScore.toLocaleString()}점에 먼저 달성하는 유저가 즉시 우승합니다!</p>
                     </div>
                 </div>
             )}

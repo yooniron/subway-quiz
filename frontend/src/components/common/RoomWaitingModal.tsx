@@ -7,6 +7,7 @@ interface RoomWaitingModalProps {
     roomTitle?: string;
     selectedLineIds?: number[] | null;
     inviteCode?: string;
+    targetScore?: number;
     role: 'player_1' | 'player_2' | null;
     isP2Connected: boolean;
     isP2Ready: boolean;
@@ -32,6 +33,7 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
     roomTitle = '즐거운 지하철 스피드 대전 방',
     selectedLineIds,
     inviteCode,
+    targetScore = 500,
     role,
     isP2Connected,
     isP2Ready,
@@ -111,6 +113,9 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                             <span className="px-2.5 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-400 text-[10px] font-black uppercase tracking-wider">
                                 GAME ROOM LOBBY
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-[10px] font-bold">
+                                🎯 승리 목표: {targetScore}pts
                             </span>
                             {inviteCode && (
                                 <button

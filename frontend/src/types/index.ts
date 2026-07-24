@@ -37,6 +37,7 @@ export interface LobbyRoom {
     is_private?: boolean;
     has_password?: boolean;
     invite_code?: string;
+    target_score?: number;
 }
 
 export type GameMode = 'MENU' | 'SINGLE' | 'MULTIPLAYER' | 'LOBBY';

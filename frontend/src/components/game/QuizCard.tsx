@@ -7,6 +7,8 @@ interface QuizCardProps {
     quiz: Quiz;
     mode: 'SINGLE' | 'MULTIPLAYER';
     onExit: () => void;
+    // 실시간 자음/모음 타이핑 미러링
+    userInput?: string;
     // 싱글 힌트용
     hintCount?: number;
     isHintActive?: boolean;
@@ -25,6 +27,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     quiz,
     mode,
     onExit,
+    userInput = '',
     hintCount = 0,
     isHintActive = false,
     onUseHint,
@@ -36,8 +39,15 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     isPassRequested = false,
     onPassRequest
 }) => {
+    // 유저 실시간 자음/모음 라이브 타이핑 렌더링 헬퍼 함수 (최우선 순위)
+    const isTypingActive = userInput.trim() !== '';
+
     // 2단계 스피드 빌드업 힌트 마스킹 헬퍼 함수
     const getAnswerPlaceholder = () => {
+        if (isTypingActive) {
+            return userInput;
+        }
+
         if (mode === 'SINGLE') {
             if (isHintActive && quiz.target_station_name) {
                 const targetName = quiz.target_station_name.replace(/역$/, '');
@@ -67,8 +77,8 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     const isL1Visible = mode === 'SINGLE' ? true : showL1;
     const isL2Visible = mode === 'SINGLE' ? true : showL2;
 
-    const isFullReveal = mode === 'MULTIPLAYER' && timeLeft <= 3;
-    const isChoseongReveal = mode === 'MULTIPLAYER' && timeLeft > 3 && timeLeft <= 10;
+    const isFullReveal = !isTypingActive && mode === 'MULTIPLAYER' && timeLeft <= 3;
+    const isChoseongReveal = !isTypingActive && mode === 'MULTIPLAYER' && timeLeft > 3 && timeLeft <= 10;
 
     return (
         <div 
@@ -80,31 +90,31 @@ export const QuizCard: React.FC<QuizCardProps> = ({
 
             {/* 상단 노선 띠 헤더 (저작권 문제없는 독자 지하철 Train 엠블럼 적용) */}
             <div 
-                className="flex justify-between items-center px-3.5 sm:px-5 py-2 sm:py-3 rounded-2xl mb-3 sm:mb-8 shadow-lg border border-white/20"
+                className="flex justify-between items-center px-2.5 sm:px-5 py-1.5 sm:py-3 rounded-2xl mb-3 sm:mb-8 shadow-lg border border-white/20 flex-nowrap whitespace-nowrap overflow-hidden gap-1 sm:gap-2"
                 style={{ backgroundColor: quiz.color_code }}
             >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 min-w-0 shrink">
                     <button 
                         onClick={onExit}
-                        className="p-1.5 sm:p-2 rounded-xl bg-black/40 hover:bg-black/60 text-white transition-all flex items-center gap-1 text-[11px] sm:text-xs font-bold"
+                        className="p-1 sm:p-2 rounded-xl bg-black/40 hover:bg-black/60 text-white transition-all flex items-center gap-1 text-[10px] sm:text-xs font-bold shrink-0"
                     >
-                        <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {mode === 'SINGLE' ? '메뉴' : '기권'}
+                        <Home className="w-3 h-3 sm:w-4 sm:h-4" /> {mode === 'SINGLE' ? '메뉴' : '기권'}
                     </button>
-                    <span className="text-[11px] sm:text-sm font-black tracking-widest text-white flex items-center gap-1.5">
-                        <Train className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                        Subway Quiz LIVE
+                    <span className="text-[10px] sm:text-sm font-black tracking-widest text-white flex items-center gap-1 truncate">
+                        <Train className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white shrink-0" />
+                        <span className="hidden xs:inline">Subway Quiz</span> LIVE
                     </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                    <span className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 bg-black/40 rounded-full text-[10px] sm:text-xs font-black text-white tracking-widest border border-white/20">
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                    <span className="px-2 sm:px-3.5 py-1 sm:py-1.5 bg-black/40 rounded-full text-[10px] sm:text-xs font-black text-white tracking-widest border border-white/20 whitespace-nowrap">
                         {quiz.line_name}
                     </span>
                     {mode === 'SINGLE' ? (
                         <button 
                             onClick={onUseHint}
                             disabled={hintCount <= 0 || isHintActive}
-                            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-black flex items-center gap-1 transition-all ${
+                            className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-black flex items-center gap-1 transition-all whitespace-nowrap ${
                                 isHintActive 
                                     ? 'bg-yellow-400 text-gray-950' 
                                     : hintCount > 0 
@@ -112,19 +122,19 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                                     : 'bg-black/20 text-gray-400 opacity-50 cursor-not-allowed'
                             }`}
                         >
-                            <Lightbulb className="w-3.5 h-3.5" /> 힌트({hintCount})
+                            <Lightbulb className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> 힌트({hintCount})
                         </button>
                     ) : (
                         <button
                             onClick={onPassRequest}
                             disabled={isPassRequested}
-                            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold flex items-center gap-1 transition-all ${
+                            className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold flex items-center gap-1 transition-all whitespace-nowrap ${
                                 isPassRequested
                                     ? 'bg-purple-900/80 text-purple-200'
                                     : 'bg-black/40 text-white hover:bg-black/60'
                             }`}
                         >
-                            <FastForward className="w-3.5 h-3.5" /> 패스({passCount}/2)
+                            <FastForward className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> 패스({passCount}/2)
                         </button>
                     )}
                 </div>
@@ -152,13 +162,18 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                         className="flex-1 max-w-xs sm:max-w-md md:max-w-xl py-3 sm:py-5 px-3 sm:px-6 rounded-2xl sm:rounded-3xl border-2 sm:border-4 border-gray-800 bg-gray-900/90 shadow-2xl flex items-center justify-center min-h-[56px] sm:min-h-[80px]"
                         style={{ borderColor: quiz.color_code }}
                     >
-                        <span className={`font-black tracking-tight drop-shadow-md text-2xl sm:text-5xl md:text-6xl ${
-                            isFullReveal 
-                                ? 'text-red-400 animate-pulse' 
-                                : isChoseongReveal 
-                                ? 'text-cyan-300 animate-pulse' 
-                                : 'text-yellow-400'
-                        }`}>
+                        <span 
+                            className={`font-black tracking-tight drop-shadow-md text-2xl sm:text-5xl md:text-6xl ${
+                                isTypingActive
+                                    ? 'animate-pulse'
+                                    : isFullReveal 
+                                    ? 'text-red-400 animate-pulse' 
+                                    : isChoseongReveal 
+                                    ? 'text-cyan-300 animate-pulse' 
+                                    : 'text-yellow-400'
+                            }`}
+                            style={isTypingActive ? { color: quiz.color_code, textShadow: `0 0 25px ${quiz.color_code}` } : undefined}
+                        >
                             {getAnswerPlaceholder()}
                         </span>
                     </div>

@@ -76,6 +76,7 @@ export const SingleGamePage: React.FC<SingleGamePageProps> = ({
                         quiz={singleQuiz}
                         mode="SINGLE"
                         onExit={onExit}
+                        userInput={userInput}
                         hintCount={hintCount}
                         isHintActive={isHintActive}
                         onUseHint={onUseHint}
@@ -87,6 +88,7 @@ export const SingleGamePage: React.FC<SingleGamePageProps> = ({
                         inputRef={inputRef}
                         onInputChange={onInputChange}
                         onAnswerSubmit={onAnswerSubmit}
+                        colorCode={singleQuiz.color_code}
                     />
 
                     <div className="mt-4 text-center">

@@ -94,14 +94,17 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                         <input
                             type="text"
                             maxLength={35}
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            spellCheck={false}
                             value={roomTitle}
                             onChange={(e) => setRoomTitle(e.target.value)}
                             placeholder="예: 2호선 고수 모십니다!"
-                            className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-400 transition-colors"
+                            className="w-full px-4 py-3 min-h-[44px] bg-gray-950 border border-gray-800 rounded-xl text-base sm:text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-400 transition-colors"
                         />
                     </div>
 
-                    {/* 승리 목표 점수 지정 (300 / 500 / 1000 / 커스텀 직접 입력) */}
+                    {/* 승리 목표 점수 맞춤 설정 */}
                     <div>
                         <label className="block text-xs font-bold text-gray-300 mb-1.5 flex items-center justify-between">
                             <span>🎯 승리 목표 점수</span>
@@ -113,7 +116,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setTargetScorePreset('300')}
-                                className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                className={`py-2.5 min-h-[40px] rounded-lg text-xs font-bold transition-all active:scale-95 ${
                                     targetScorePreset === '300'
                                         ? 'bg-amber-400 text-gray-950 shadow-md font-black'
                                         : 'text-gray-400 hover:text-white'
@@ -124,7 +127,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setTargetScorePreset('500')}
-                                className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                className={`py-2.5 min-h-[40px] rounded-lg text-xs font-bold transition-all active:scale-95 ${
                                     targetScorePreset === '500'
                                         ? 'bg-amber-400 text-gray-950 shadow-md font-black'
                                         : 'text-gray-400 hover:text-white'
@@ -135,7 +138,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setTargetScorePreset('1000')}
-                                className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                className={`py-2.5 min-h-[40px] rounded-lg text-xs font-bold transition-all active:scale-95 ${
                                     targetScorePreset === '1000'
                                         ? 'bg-amber-400 text-gray-950 shadow-md font-black'
                                         : 'text-gray-400 hover:text-white'
@@ -146,7 +149,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setTargetScorePreset('CUSTOM')}
-                                className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                className={`py-2.5 min-h-[40px] rounded-lg text-xs font-bold transition-all active:scale-95 ${
                                     targetScorePreset === 'CUSTOM'
                                         ? 'bg-amber-400 text-gray-950 shadow-md font-black'
                                         : 'text-gray-400 hover:text-white'

@@ -71,7 +71,7 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
     const isGameOver = roomStatus === 'FINISHED' || scores.p1 >= targetScore || scores.p2 >= targetScore;
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 px-4 text-white font-sans relative overflow-hidden">
+        <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-gray-950 px-3 sm:px-4 py-4 text-white font-sans relative overflow-hidden pb-[env(safe-area-inset-bottom)]">
             <CorrectOverlay show={showCorrectOverlay} />
 
             <ScoreBoard 

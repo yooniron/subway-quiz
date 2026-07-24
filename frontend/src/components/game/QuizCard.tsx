@@ -85,18 +85,19 @@ export const QuizCard: React.FC<QuizCardProps> = ({
             key={quiz.target_station_id} 
             className="w-full max-w-2xl sm:max-w-3xl rounded-3xl sm:rounded-[2.5rem] bg-gray-950/95 p-3.5 sm:p-8 md:p-10 border-4 sm:border-8 border-gray-800 shadow-[0_30px_70px_rgba(0,0,0,0.8)] text-center relative overflow-hidden backdrop-blur-md animate-card-pop"
         >
-            <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-25" style={{ backgroundColor: quiz.color_code }} />
-            <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full blur-3xl opacity-25" style={{ backgroundColor: quiz.color_code }} />
+            <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-25 pointer-events-none" style={{ backgroundColor: quiz.color_code }} />
+            <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full blur-3xl opacity-25 pointer-events-none" style={{ backgroundColor: quiz.color_code }} />
 
             {/* 상단 노선 띠 헤더 (저작권 문제없는 독자 지하철 Train 엠블럼 적용) */}
             <div 
-                className="flex justify-between items-center px-2.5 sm:px-5 py-1.5 sm:py-3 rounded-2xl mb-3 sm:mb-8 shadow-lg border border-white/20 flex-nowrap whitespace-nowrap overflow-hidden gap-1 sm:gap-2"
+                className="flex justify-between items-center px-2.5 sm:px-5 py-1.5 sm:py-3 rounded-2xl mb-3 sm:mb-8 shadow-lg border border-white/20 flex-nowrap whitespace-nowrap overflow-hidden gap-1 sm:gap-2 relative z-20 pointer-events-auto"
                 style={{ backgroundColor: quiz.color_code }}
             >
                 <div className="flex items-center gap-1 sm:gap-2 min-w-0 shrink">
                     <button 
+                        type="button"
                         onClick={onExit}
-                        className="p-1 sm:p-2 rounded-xl bg-black/40 hover:bg-black/60 text-white transition-all flex items-center gap-1 text-[10px] sm:text-xs font-bold shrink-0"
+                        className="p-1 sm:p-2 rounded-xl bg-black/40 hover:bg-black/60 text-white transition-all flex items-center gap-1 text-[10px] sm:text-xs font-bold shrink-0 cursor-pointer active:scale-95 z-30"
                     >
                         <Home className="w-3 h-3 sm:w-4 sm:h-4" /> {mode === 'SINGLE' ? '메뉴' : '기권'}
                     </button>
@@ -112,29 +113,33 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                     </span>
                     {mode === 'SINGLE' ? (
                         <button 
+                            type="button"
                             onClick={onUseHint}
                             disabled={hintCount <= 0 || isHintActive}
-                            className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-black flex items-center gap-1 transition-all whitespace-nowrap ${
+                            className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-black flex items-center gap-1 transition-all whitespace-nowrap cursor-pointer active:scale-95 z-30 ${
                                 isHintActive 
                                     ? 'bg-yellow-400 text-gray-950' 
                                     : hintCount > 0 
-                                    ? 'bg-black/40 text-yellow-300 hover:bg-black/60' 
-                                    : 'bg-black/20 text-gray-400 opacity-50 cursor-not-allowed'
+                                    ? 'bg-black/40 hover:bg-black/60 text-white border border-white/20' 
+                                    : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                             }`}
                         >
-                            <Lightbulb className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> 힌트({hintCount})
+                            <Lightbulb className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-400" />
+                            <span>힌트 ({hintCount})</span>
                         </button>
                     ) : (
-                        <button
+                        <button 
+                            type="button"
                             onClick={onPassRequest}
                             disabled={isPassRequested}
-                            className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold flex items-center gap-1 transition-all whitespace-nowrap ${
-                                isPassRequested
-                                    ? 'bg-purple-900/80 text-purple-200'
-                                    : 'bg-black/40 text-white hover:bg-black/60'
+                            className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-black flex items-center gap-1 transition-all whitespace-nowrap cursor-pointer active:scale-95 z-30 ${
+                                isPassRequested 
+                                    ? 'bg-amber-400 text-gray-950 font-bold' 
+                                    : 'bg-black/40 hover:bg-black/60 text-white border border-white/20'
                             }`}
                         >
-                            <FastForward className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> 패스({passCount}/2)
+                            <FastForward className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                            <span>패스 ({passCount}/2)</span>
                         </button>
                     )}
                 </div>

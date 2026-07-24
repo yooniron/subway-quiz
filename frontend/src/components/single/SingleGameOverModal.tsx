@@ -67,24 +67,27 @@ export const SingleGameOverModal: React.FC<SingleGameOverModalProps> = ({
                     </div>
                 )}
 
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 relative z-30 pointer-events-auto">
                     <div className="flex gap-2">
                         <button
+                            type="button"
                             onClick={onRestart}
-                            className="flex-1 py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-black rounded-xl text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                            className="flex-1 py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-black rounded-xl text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer z-30"
                         >
                             <RotateCcw className="w-4 h-4" /> 다시 도전
                         </button>
                         <button
+                            type="button"
                             onClick={onOpenLeaderboard}
-                            className="px-4 py-3.5 bg-yellow-400/10 border border-yellow-400/20 hover:bg-yellow-400/20 text-yellow-300 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-1.5"
+                            className="px-4 py-3.5 bg-yellow-400/10 border border-yellow-400/20 hover:bg-yellow-400/20 text-yellow-300 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 z-30"
                         >
                             <Trophy className="w-4 h-4" /> 랭킹
                         </button>
                     </div>
                     <button
+                        type="button"
                         onClick={onExit}
-                        className="w-full py-3 bg-gray-950 hover:bg-gray-800 text-gray-400 hover:text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-1 border border-gray-800"
+                        className="w-full py-3 bg-gray-950 hover:bg-gray-800 text-gray-400 hover:text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-1 border border-gray-800 cursor-pointer active:scale-95 z-30"
                     >
                         <Home className="w-4 h-4" /> 메인 메뉴로 이동
                     </button>

@@ -204,35 +204,35 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                     <button
                         onClick={onQuickMatch}
-                        className="py-4 px-4 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-gray-950 font-black text-xs rounded-2xl shadow-xl shadow-amber-400/10 transition-transform active:scale-95 flex items-center justify-center gap-1.5 group"
+                        className="py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs rounded-2xl shadow-xl shadow-emerald-500/20 transition-transform active:scale-95 flex items-center justify-center gap-1.5 group border border-emerald-300/30"
                     >
-                        <Zap className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                        빠른 자동 매칭
+                        <Zap className="w-4 h-4 group-hover:scale-110 transition-transform text-white" />
+                        ⚡ 빠른 승차 (자동 매칭)
                     </button>
 
                     <button
                         onClick={onOpenCreateRoom}
-                        className="py-4 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-black text-xs rounded-2xl shadow-xl shadow-blue-500/10 transition-transform active:scale-95 flex items-center justify-center gap-1.5 group"
+                        className="py-3.5 px-4 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-gray-950 font-black text-xs rounded-2xl shadow-xl shadow-amber-400/20 transition-transform active:scale-95 flex items-center justify-center gap-1.5 group border border-amber-300/40"
                     >
-                        <PlusCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                        <PlusCircle className="w-4 h-4 group-hover:scale-110 transition-transform text-gray-950" />
                         맞춤 방 만들기
                     </button>
 
                     <button
                         onClick={onOpenInviteCodeModal}
-                        className="py-4 px-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-black text-xs rounded-2xl shadow-xl shadow-purple-500/10 transition-transform active:scale-95 flex items-center justify-center gap-1.5 group"
+                        className="py-3.5 px-4 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-black text-xs rounded-2xl shadow-xl shadow-purple-500/20 transition-transform active:scale-95 flex items-center justify-center gap-1.5 group border border-purple-300/30"
                     >
-                        <Key className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                        🔑 초대 코드로 입장
+                        <Key className="w-4 h-4 group-hover:scale-110 transition-transform text-white" />
+                        🔑 초대 코드로 승차
                     </button>
 
                     <button
                         onClick={onRefresh}
                         disabled={isLoading}
-                        className="py-4 px-4 bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                        className="py-3.5 px-4 bg-gray-950 border border-gray-800 hover:border-emerald-500/40 text-gray-300 hover:text-white font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
                     >
-                        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-400' : ''}`} />
-                        🔄 목록 새로고침
+                        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-emerald-400' : ''}`} />
+                        🔄 정보판 갱신
                     </button>
                 </div>
             </div>

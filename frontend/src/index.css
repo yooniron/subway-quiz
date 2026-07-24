@@ -59,6 +59,26 @@
         100% { transform: scale(0.9); opacity: 0; }
     }
     .animate-correct-pop {
-        animation: correct-pop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        animation: correct-pop 0.6s ease-in-out forwards;
+    }
+
+    /* 🚆 지하철 열차 주행 진행 화살표 (<<<<) 애니메이션 */
+    @keyframes train-arrow-drive {
+        0% { transform: translateX(0); opacity: 0.3; }
+        50% { transform: translateX(-4px); opacity: 1; }
+        100% { transform: translateX(0); opacity: 0.3; }
+    }
+    .animate-arrow-drive {
+        animation: train-arrow-drive 0.8s ease-in-out infinite;
+    }
+
+    /* 🚆 Pure CSS 모던 지하철 객차 수평 주행 애니메이션 */
+    @keyframes css-train-drive {
+        0% { transform: translateX(-6px); }
+        50% { transform: translateX(6px); }
+        100% { transform: translateX(-6px); }
+    }
+    .animate-train-drive {
+        animation: css-train-drive 1.2s ease-in-out infinite;
     }
 }

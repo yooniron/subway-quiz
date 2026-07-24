@@ -71,7 +71,7 @@ export const SingleGamePage: React.FC<SingleGamePageProps> = ({
             />
 
             {singleQuiz && (
-                <div className="w-full max-w-2xl">
+                <div className="w-full max-w-2xl sm:max-w-3xl">
                     <QuizCard 
                         quiz={singleQuiz}
                         mode="SINGLE"
@@ -83,12 +83,10 @@ export const SingleGamePage: React.FC<SingleGamePageProps> = ({
 
                     <AnswerForm 
                         userInput={userInput}
-                        onChange={onInputChange}
-                        onSubmit={onAnswerSubmit}
-                        disabled={isSingleOver}
-                        isShaking={isInputShaking}
-                        placeholder="정답 역명을 입력하세요! 🎯"
+                        isInputShaking={isInputShaking}
                         inputRef={inputRef}
+                        onInputChange={onInputChange}
+                        onAnswerSubmit={onAnswerSubmit}
                     />
 
                     <div className="mt-4 text-center">

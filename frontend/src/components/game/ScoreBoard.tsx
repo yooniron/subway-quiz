@@ -115,11 +115,12 @@ export const ScoreBoard: React.FC<ScoreBoardProps> = ({
                         {isWinner ? `${targetScore.toLocaleString()}점에 먼저 도달하여 매치에서 우승했습니다!` : `상대방이 먼저 ${targetScore.toLocaleString()}점을 획득하였습니다.`}
                     </p>
 
-                    <div className="flex gap-3 justify-center max-w-sm mx-auto">
+                    <div className="flex gap-3 justify-center max-w-sm mx-auto relative z-30 pointer-events-auto">
                         <button
+                            type="button"
                             onClick={onRematchRequest}
                             disabled={myRematch}
-                            className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                            className={`flex-1 py-3.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer z-30 ${
                                 myRematch
                                     ? 'bg-yellow-400/20 border border-yellow-400/40 text-yellow-300 cursor-not-allowed'
                                     : 'bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-gray-950 shadow-lg shadow-yellow-400/20 active:scale-95'
@@ -129,8 +130,9 @@ export const ScoreBoard: React.FC<ScoreBoardProps> = ({
                             {myRematch ? "상대 응답 대기 중..." : "⚡ 1대1 재경기 신청"}
                         </button>
                         <button
+                            type="button"
                             onClick={onExitRoom}
-                            className="py-3.5 px-5 bg-gray-950 border border-gray-800 hover:border-gray-700 text-gray-300 font-bold text-sm rounded-xl transition-all flex items-center gap-1"
+                            className="py-3.5 px-5 bg-gray-950 border border-gray-800 hover:border-gray-700 text-gray-300 font-bold text-sm rounded-xl transition-all flex items-center gap-1 cursor-pointer active:scale-95 z-30"
                         >
                             <Home className="w-4 h-4" /> 메뉴
                         </button>

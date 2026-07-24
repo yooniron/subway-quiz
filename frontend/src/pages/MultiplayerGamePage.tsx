@@ -89,11 +89,12 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
             />
 
             {quiz && !isGameOver && (
-                <div className="w-full max-w-2xl">
+                <div className="w-full max-w-2xl sm:max-w-3xl">
                     <QuizCard 
                         quiz={quiz}
                         mode="MULTIPLAYER"
                         onExit={onExitRoom}
+                        userInput={userInput}
                         timeLeft={timeLeft}
                         showL1={showL1}
                         showL2={showL2}
@@ -109,8 +110,9 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
                         onSubmit={onAnswerSubmit}
                         disabled={isGameOver}
                         isShaking={isInputShaking}
-                        placeholder="정답 역명을 타이핑하세요! ⚡"
+                        placeholder="정답 역명을 입력하세요! 🎯"
                         inputRef={inputRef}
+                        colorCode={quiz.color_code}
                     />
 
                     <div className="mt-4 text-center">

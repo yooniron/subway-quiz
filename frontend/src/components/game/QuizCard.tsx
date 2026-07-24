@@ -124,48 +124,48 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                 )}
             </div>
 
-            <div className="relative flex items-center justify-between w-full px-2 py-8 mb-8">
-                <div className="absolute left-0 right-0 h-3 -z-10 rounded-full transition-all duration-300" style={{ backgroundColor: quiz.color_code, top: '42%' }} />
+            <div className="relative flex items-center justify-between w-full px-1 sm:px-2 py-6 sm:py-8 mb-6 sm:mb-8">
+                <div className="absolute left-0 right-0 h-2.5 sm:h-3 -z-10 rounded-full transition-all duration-300" style={{ backgroundColor: quiz.color_code, top: '38%' }} />
                 
                 <div className={`flex flex-col items-center w-1/5 transition-all ${isL2Visible ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>
-                    <div className="w-8 h-8 rounded-full border-4 border-white bg-gray-950" />
-                    <span className="mt-2 text-xs font-bold truncate max-w-[80px]">{isL2Visible ? quiz.left_2 : '?'}</span>
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 sm:border-4 border-white bg-gray-950" />
+                    <span className="mt-1.5 text-[10px] sm:text-xs font-bold text-center break-keep-all leading-tight max-w-[60px] sm:max-w-none">{isL2Visible ? quiz.left_2 : '?'}</span>
                 </div>
                 
                 <div className={`flex flex-col items-center w-1/5 transition-all ${isL1Visible ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>
-                    <div className="w-8 h-8 rounded-full border-4 border-white bg-gray-950" />
-                    <span className="mt-2 text-xs font-bold truncate max-w-[80px]">{isL1Visible ? quiz.left_1 : '?'}</span>
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 sm:border-4 border-white bg-gray-950" />
+                    <span className="mt-1.5 text-[10px] sm:text-xs font-bold text-center break-keep-all leading-tight max-w-[60px] sm:max-w-none">{isL1Visible ? quiz.left_1 : '?'}</span>
                 </div>
 
                 <div className="flex flex-col items-center w-1/5">
                     <div className={`rounded-full border-4 flex items-center justify-center transition-all duration-300 ${
                         isFullReveal
-                            ? 'w-20 h-14 px-3 border-red-500 bg-red-950/90 text-white animate-pulse shadow-[0_0_25px_rgba(239,68,68,0.8)]'
+                            ? 'w-16 h-12 sm:w-20 sm:h-14 px-2 sm:px-3 border-red-500 bg-red-950/90 text-white animate-pulse shadow-[0_0_25px_rgba(239,68,68,0.8)]'
                             : isChoseongReveal
-                            ? 'w-16 h-14 border-amber-400 bg-amber-950/90 text-amber-300 animate-bounce shadow-[0_0_20px_rgba(245,158,11,0.6)]'
-                            : 'w-14 h-14 border-yellow-400 bg-white text-gray-950 animate-bounce shadow-[0_0_20px_rgba(250,204,21,0.5)]'
+                            ? 'w-14 h-12 sm:w-16 sm:h-14 border-amber-400 bg-amber-950/90 text-amber-300 animate-bounce shadow-[0_0_20px_rgba(245,158,11,0.6)]'
+                            : 'w-12 h-12 sm:w-14 sm:h-14 border-yellow-400 bg-white text-gray-950 animate-bounce shadow-[0_0_20px_rgba(250,204,21,0.5)]'
                     }`}>
                         <span className={`font-black tracking-tight ${
-                            isFullReveal ? 'text-sm text-red-300 font-mono' : isChoseongReveal ? 'text-sm text-amber-300 font-mono' : 'text-lg text-gray-950'
+                            isFullReveal ? 'text-xs sm:text-sm text-red-300 font-mono' : isChoseongReveal ? 'text-xs sm:text-sm text-amber-300 font-mono' : 'text-base sm:text-lg text-gray-950'
                         }`}>
                             {getAnswerPlaceholder()}
                         </span>
                     </div>
-                    <span className={`mt-2 text-xs font-black tracking-wider ${
+                    <span className={`mt-1.5 text-[10px] sm:text-xs font-black tracking-wider ${
                         isFullReveal ? 'text-red-400 animate-pulse' : isChoseongReveal ? 'text-amber-400' : 'text-yellow-400'
                     }`}>
-                        {isFullReveal ? '[ 🚨 정답 공개! ]' : isChoseongReveal ? '[ ✨ 초성 힌트 ]' : '[ 정답 ]'}
+                        {isFullReveal ? '[ 🚨 정답! ]' : isChoseongReveal ? '[ ✨ 초성 ]' : '[ 정답 ]'}
                     </span>
                 </div>
 
                 <div className={`flex flex-col items-center w-1/5 transition-all ${isL1Visible ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>
-                    <div className="w-8 h-8 rounded-full border-4 border-white bg-gray-950" />
-                    <span className="mt-2 text-xs font-bold truncate max-w-[80px]">{isL1Visible ? quiz.right_1 : '?'}</span>
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 sm:border-4 border-white bg-gray-950" />
+                    <span className="mt-1.5 text-[10px] sm:text-xs font-bold text-center break-keep-all leading-tight max-w-[60px] sm:max-w-none">{isL1Visible ? quiz.right_1 : '?'}</span>
                 </div>
 
                 <div className={`flex flex-col items-center w-1/5 transition-all ${isL2Visible ? 'opacity-100 scale-100' : 'opacity-20 blur-xs scale-90'}`}>
-                    <div className="w-8 h-8 rounded-full border-4 border-white bg-gray-950" />
-                    <span className="mt-2 text-xs font-bold truncate max-w-[80px]">{isL2Visible ? quiz.right_2 : '?'}</span>
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 sm:border-4 border-white bg-gray-950" />
+                    <span className="mt-1.5 text-[10px] sm:text-xs font-bold text-center break-keep-all leading-tight max-w-[60px] sm:max-w-none">{isL2Visible ? quiz.right_2 : '?'}</span>
                 </div>
             </div>
         </div>

@@ -84,7 +84,7 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
                 <div className="flex flex-col gap-3 w-full">
                     <button 
                         onClick={() => onOpenLineSelectorWithMode('MULTIPLAYER')}
-                        className="w-full py-4 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-gray-950 font-black text-lg rounded-2xl shadow-xl shadow-yellow-400/10 transition-transform transform active:scale-95 flex items-center justify-center gap-2 group"
+                        className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-lg rounded-2xl shadow-xl shadow-emerald-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2 group border border-emerald-300/30"
                     >
                         <Users className="w-6 h-6 transition-transform group-hover:scale-110" />
                         실시간 1대1 대전 매칭 시작
@@ -92,17 +92,17 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
 
                     <button 
                         onClick={() => onOpenLineSelectorWithMode('SINGLE')}
-                        className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-black text-lg rounded-2xl shadow-xl shadow-blue-500/10 transition-transform transform active:scale-95 flex items-center justify-center gap-2 group"
+                        className="w-full py-4 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-gray-950 font-black text-lg rounded-2xl shadow-xl shadow-amber-400/20 transition-all transform active:scale-95 flex items-center justify-center gap-2 group border border-amber-300/40"
                     >
-                        <Zap className="w-6 h-6 transition-transform group-hover:scale-110" />
+                        <Zap className="w-6 h-6 transition-transform group-hover:scale-110 text-gray-950" />
                         🎯 싱글 타임어택 (60초 챌린지)
                     </button>
 
                     <button 
                         onClick={onFetchLeaderboard}
-                        className="w-full py-3.5 bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2"
+                        className="w-full py-3.5 bg-gray-950 border border-gray-800 hover:border-emerald-500/40 text-gray-300 hover:text-white font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2"
                     >
-                        <Trophy className="w-4 h-4 text-yellow-400" />
+                        <Trophy className="w-4 h-4 text-amber-400" />
                         🏆 명예의 전당 (호선별 TOP 10 랭킹)
                     </button>
                 </div>

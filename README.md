@@ -105,6 +105,7 @@
 
 ## 📝 최근 업데이트 및 변경 사항 (자동 업데이트)
 <!-- RELEASE_LOGS_START -->
+- fix: AnswerForm onChange is not a function 런타임 에러 Universal Fallback 원천 수술 (#30) (2026-07-24)
 - feat: feature/45-mobile-typing-and-live-mirroring 개발 브랜치 병합 요청 (#28) (2026-07-24)
 - feat: 한글 자음/모음 초극세사 실시간 미러링, 노선 7대 테마 동기화, 모바일 자판 수술 & README GIF 반영 (#27) (2026-07-24)
 - fix: 모바일 정답란 타이핑 버그 원천 해결 및 전 기기 스크롤 Zero 한눈 피팅 UI 적용 (#26) (2026-07-24)
@@ -116,5 +117,4 @@
 - feat: Vercel 실운영 배포(vercel.json), 카카오톡 OG 메타태그 및 README 라이브 배지 반영 (2026-07-24)
 - feat: 1대1 멀티플레이어 게임성 및 UX 종합 개선 (점수판 버그 수정, 목표점수 설정, 2단계 스피드 빌드업) (#22) (2026-07-24)
 - feat: Playwright 2인 멀티플레이어 & 싱글 듀얼 게임 플레이 시연 영상 녹화 및 README 반영 (#19) (2026-07-23)
-- refactor: Dissect 및 Multi-Review 기반 CRITICAL 결함 5건 및 핵심 UX/보안 종합 수정 (2026-07-23)
 <!-- RELEASE_LOGS_END -->

@@ -18,6 +18,7 @@ interface RoomWaitingModalProps {
     p1Emoji: string | null;
     p2Emoji: string | null;
     onSendEmoji: (emoji: string) => void;
+    onOpenRoomSettings?: () => void;
 }
 
 const SUBWAY_TIPS = [
@@ -43,7 +44,8 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
     showToast,
     p1Emoji,
     p2Emoji,
-    onSendEmoji
+    onSendEmoji,
+    onOpenRoomSettings
 }) => {
     const [tipIndex, setTipIndex] = useState(0);
 
@@ -82,6 +84,23 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
 
     const handleCopyLink = async () => {
         const inviteUrl = `${window.location.origin}?room=${roomId}`;
+        const shareData = {
+            title: 'Subway Quiz - 실시간 지하철 스피드 대전',
+            text: `[Subway Quiz] ${roomTitle} 대전방에 초대합니다! (초대코드: ${inviteCode || '자유입장'})`,
+            url: inviteUrl
+        };
+
+        // 모바일 환경 카카오톡/메신저 Web Share API 우선 호환
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+                showToast('success', "📲 카카오톡 및 모바일 메신저 공유 창이 실행되었습니다!");
+                return;
+            } catch (err) {
+                // 공유창 취소 시
+            }
+        }
+
         try {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 await navigator.clipboard.writeText(inviteUrl);
@@ -141,10 +160,22 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
                     </button>
                 </div>
 
-                {/* 출제 호선 뱃지 요약 */}
-                <div className="bg-gray-950/80 border border-gray-800/80 rounded-2xl p-3 flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-gray-400">출제 노선:</span>
-                    <div className="flex flex-wrap gap-1 justify-end">
+                {/* 출제 호선 뱃지 요약 및 방 설정 변경 버튼 (방장 전용) */}
+                <div className="bg-gray-950/80 border border-gray-800/80 rounded-2xl p-3.5 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-400">출제 노선:</span>
+                        {isHost && onOpenRoomSettings && (
+                            <button
+                                type="button"
+                                onClick={onOpenRoomSettings}
+                                className="px-2.5 py-1 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/40 text-amber-300 text-[11px] font-black flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                                title="방 설정 변경 (공개/비공개, 출제호선, 목표점수)"
+                            >
+                                ⚙️ 방 설정 변경
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex flex-wrap gap-1 justify-end max-w-[60%]">
                         {isAllLines ? (
                             <span className="px-2.5 py-0.5 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-xs font-black rounded-lg">
                                 🌟 1~9호선 전체 출제

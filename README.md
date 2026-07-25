@@ -4,7 +4,14 @@
 
 실시간 지하철 노선 네트워크 구조를 활용하여 1대1로 마주 보며 선착순으로 정답을 외쳐 점수를 획득하는 **양방향 실시간 스피드 경쟁 퀴즈 게임**입니다. 
 
-![Subway Quiz Main Menu](./main_menu.png)
+<div align="center">
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="./docs/images/thumbnail_1.png" width="280" alt="Subway Quiz Screenshot 1" /> | <img src="./docs/images/thumbnail_2.png" width="280" alt="Subway Quiz Screenshot 2" /> | <img src="./docs/images/thumbnail_3.png" width="280" alt="Subway Quiz Screenshot 3" /> |
+| <img src="./docs/images/thumbnail_4.png" width="280" alt="Subway Quiz Screenshot 4" /> | <img src="./docs/images/thumbnail_5.png" width="280" alt="Subway Quiz Screenshot 5" /> | |
+
+</div>
 
 ---
 
@@ -12,7 +19,7 @@
 
 | ⚔️ 1대1 실시간 멀티플레이어 대전 시연 데모 | 🎯 싱글 타임어택 챌린지 시연 데모 |
 | :---: | :---: |
-| ![1v1 Multiplayer Gameplay](./frontend/public/media/multiplayer_demo.gif) | ![Singleplay Gameplay](./frontend/public/media/single_demo.gif) |
+| ![1v1 Multiplayer Gameplay](./docs/images/multiplayer_demo.gif) | ![Singleplay Gameplay](./docs/images/single_demo.gif) |
 
 ---
 
@@ -21,12 +28,12 @@
 ### 1v1 실시간 멀티플레이 대기실 및 대전 화면
 | 🟢 대기실 (초직관적인 READY 상태 분기) | ⚔️ 실시간 멀티플레이 대전 화면 |
 | :---: | :---: |
-| ![Room Lobby Waiting](./multi_lobby_p2_ready.png) | ![Multiplayer Gameplay](./multi_gameplay.png) |
+| ![Room Lobby Waiting](./docs/images/multi_lobby_p2_ready.png) | ![Multiplayer Gameplay](./docs/images/multi_gameplay.png) |
 
 ### 🎯 싱글플레이 타임어택 (60초 챌린지) 화면
 | 🎯 싱글플레이 타임어택 인게임 |
 | :---: |
-| ![Singleplay Gameplay](./play_game_start.png) |
+| ![Singleplay Gameplay](./docs/images/play_game_start.png) |
 
 ---
 

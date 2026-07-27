@@ -68,6 +68,11 @@ export default function App() {
     const [isSingleOver, setIsSingleOver] = useState(false);
     const [singleQuiz, setSingleQuiz] = useState<Quiz | null>(null);
 
+    // 퀴즈 중복 출제 방지 및 노선 완파 감지용 상태
+    const [answeredStationIds, setAnsweredStationIds] = useState<number[]>([]);
+    const [totalStationCount, setTotalStationCount] = useState<number>(0);
+    const [allClearedFlag, setAllClearedFlag] = useState(false);
+
     // 랭킹 및 닉네임 상태 변수들
     const [nicknameInput, setNicknameInput] = useState(() => localStorage.getItem('subway_nickname') || '');
     const [isRankSubmitted, setIsRankSubmitted] = useState(false);
@@ -504,7 +509,7 @@ export default function App() {
         }
     };
 
-    const startSingleModeWithLines = (lines: number[]) => {
+    const startSingleModeWithLines = async (lines: number[]) => {
         setGameMode('SINGLE');
         setSingleScore(0);
         setSingleTimeLeft(60);
@@ -514,13 +519,30 @@ export default function App() {
         setIsSingleOver(false);
         setIsRankSubmitted(false);
         setUserInput('');
-        loadSingleQuiz(lines);
+        setAnsweredStationIds([]);
+        setAllClearedFlag(false);
+
+        // 선택된 호선의 총 고유 역 수 조회 (완파 감지용)
+        try {
+            const { data: stationData } = await supabase
+                .from('station_connections')
+                .select('from_station_id')
+                .in('line_id', lines);
+            if (stationData) {
+                const uniqueStations = new Set(stationData.map((s: any) => s.from_station_id));
+                setTotalStationCount(uniqueStations.size);
+            }
+        } catch { /* fallback: 0 */ }
+
+        loadSingleQuiz(lines, []);
     };
 
-    const loadSingleQuiz = async (lines: number[] = selectedLineIds) => {
+    const loadSingleQuiz = async (lines: number[] = selectedLineIds, excludeIds?: number[]) => {
+        const currentExcludeIds = excludeIds !== undefined ? excludeIds : answeredStationIds;
         try {
             const { data, error } = await supabase.rpc('get_single_quiz', {
-                p_selected_line_ids: lines
+                p_selected_line_ids: lines,
+                p_exclude_station_ids: currentExcludeIds.length > 0 ? currentExcludeIds : null
             });
             if (error) {
                 showToast('error', "퀴즈 출제 오류가 발생하여 메인으로 복귀합니다.");
@@ -542,12 +564,28 @@ export default function App() {
                 setUserInput('');
                 focusInput();
             } else {
-                showToast('error', "퀴즈 데이터를 읽을 수 없어 메뉴로 돌아갑니다.");
-                setGameMode('MENU');
+                // 🏆 모든 역 정답 완파! 특별 달성 알림
+                handleAllStationsCleared();
             }
         } catch (e: any) {
             showToast('error', "퀴즈 로딩 예외가 발생했습니다.");
             setGameMode('MENU');
+        }
+    };
+
+    // 노선 완파 달성 처리
+    const handleAllStationsCleared = () => {
+        confetti({ particleCount: 200, spread: 120, origin: { y: 0.4 } });
+        setTimeout(() => confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } }), 300);
+        
+        const clearBonus = singleTimeLeft * 50;
+        setSingleScore(prev => prev + clearBonus);
+        setAllClearedFlag(true);
+        setIsSingleOver(true);
+        
+        showToast('success', `🏆 전설의 지하철 고수! ${answeredStationIds.length}개 역 전체 돌파 완료!`);
+        if (clearBonus > 0) {
+            showToast('score', `⏱️ 남은 시간 보너스: +${clearBonus.toLocaleString()}pts!`);
         }
     };
 
@@ -597,6 +635,10 @@ export default function App() {
             const nextCombo = comboCount + 1;
             setComboCount(nextCombo);
 
+            // 정답 역 ID를 이력에 추가 (중복 출제 방지)
+            const newAnswered = [...answeredStationIds, singleQuiz.target_station_id];
+            setAnsweredStationIds(newAnswered);
+
             let addedPoints = 100;
             let timeBonus = 0;
 
@@ -623,7 +665,7 @@ export default function App() {
                 setSingleTimeLeft((prev) => prev + timeBonus);
             }
 
-            loadSingleQuiz(selectedLineIds);
+            loadSingleQuiz(selectedLineIds, newAnswered);
             focusInput();
         } else {
             setComboCount(0);
@@ -1055,6 +1097,8 @@ export default function App() {
                     inputRef={inputRef}
                     nicknameInput={nicknameInput}
                     isRankSubmitted={isRankSubmitted}
+                    allCleared={allClearedFlag}
+                    answeredCount={answeredStationIds.length}
                     onInputChange={(e) => setUserInput(e.target.value)}
                     onAnswerSubmit={handleSingleAnswerSubmit}
                     onUseHint={useSingleHint}

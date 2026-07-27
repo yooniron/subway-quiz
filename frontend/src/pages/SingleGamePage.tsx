@@ -22,6 +22,8 @@ interface SingleGamePageProps {
     inputRef: React.RefObject<HTMLInputElement>;
     nicknameInput: string;
     isRankSubmitted: boolean;
+    allCleared?: boolean;
+    answeredCount?: number;
     // 이벤트 핸들러
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onAnswerSubmit: (e: React.FormEvent) => void;
@@ -49,6 +51,8 @@ export const SingleGamePage: React.FC<SingleGamePageProps> = ({
     inputRef,
     nicknameInput,
     isRankSubmitted,
+    allCleared = false,
+    answeredCount = 0,
     onInputChange,
     onAnswerSubmit,
     onUseHint,
@@ -59,24 +63,30 @@ export const SingleGamePage: React.FC<SingleGamePageProps> = ({
     onOpenLeaderboard
 }) => {
     return (
-        <div className="flex min-h-[100dvh] flex-col items-center justify-between bg-gray-950 px-3 sm:px-4 py-2 sm:py-6 text-white font-sans relative overflow-y-auto min-w-full">
-            <CorrectOverlay show={showCorrectOverlay} />
+        <div className={`min-h-screen bg-gray-950 text-white font-sans flex flex-col items-center justify-center p-4 relative overflow-hidden transition-transform ${isShaking ? 'animate-shake' : ''}`}>
+            {/* 정답 팡파레 오버레이 */}
+            <CorrectOverlay isVisible={showCorrectOverlay} points={floatingPoints} />
 
+            {/* 헤더 및 스코어보드 */}
             <SingleScoreBoard 
-                singleScore={singleScore}
-                singleTimeLeft={singleTimeLeft}
+                score={singleScore}
+                timeLeft={singleTimeLeft}
                 comboCount={comboCount}
-                floatingPoints={floatingPoints}
-                isShaking={isShaking}
+                onExit={onExit}
             />
 
+            {/* 메인 퀴즈 보드 */}
             {singleQuiz && (
-                <div className="w-full max-w-2xl sm:max-w-3xl">
+                <div className="w-full max-w-2xl">
                     <QuizCard 
-                        quiz={singleQuiz}
-                        mode="SINGLE"
-                        onExit={onExit}
+                        lineName={singleQuiz.line_name}
+                        colorCode={singleQuiz.color_code}
+                        left2={singleQuiz.left_2}
+                        left1={singleQuiz.left_1}
+                        right1={singleQuiz.right_1}
+                        right2={singleQuiz.right_2}
                         userInput={userInput}
+                        onExit={onExit}
                         hintCount={hintCount}
                         isHintActive={isHintActive}
                         onUseHint={onUseHint}
@@ -107,6 +117,9 @@ export const SingleGamePage: React.FC<SingleGamePageProps> = ({
                     onRestart={onRestart}
                     onExit={onExit}
                     onOpenLeaderboard={onOpenLeaderboard}
+                    allCleared={allCleared}
+                    answeredCount={answeredCount}
+                    timeLeft={singleTimeLeft}
                 />
             )}
         </div>

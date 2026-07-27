@@ -79,14 +79,10 @@ export const SingleGamePage: React.FC<SingleGamePageProps> = ({
             {singleQuiz && (
                 <div className="w-full max-w-2xl">
                     <QuizCard 
-                        lineName={singleQuiz.line_name}
-                        colorCode={singleQuiz.color_code}
-                        left2={singleQuiz.left_2}
-                        left1={singleQuiz.left_1}
-                        right1={singleQuiz.right_1}
-                        right2={singleQuiz.right_2}
-                        userInput={userInput}
+                        quiz={singleQuiz}
+                        mode="SINGLE"
                         onExit={onExit}
+                        userInput={userInput}
                         hintCount={hintCount}
                         isHintActive={isHintActive}
                         onUseHint={onUseHint}

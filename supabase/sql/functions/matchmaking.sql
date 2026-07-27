@@ -48,7 +48,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- [RPC 2] 커스텀 맞춤 방 생성 (방 제목, 호선 선택, 비공개/비밀번호, 목표 점수 지원)
+-- [RPC 2] 커스텀 방 생성 (방 제목, 호선 선택, 비공개/비밀번호, 목표 점수 지원)
 DROP FUNCTION IF EXISTS create_custom_room(UUID, VARCHAR, INT[], BOOLEAN, VARCHAR, INT);
 CREATE OR REPLACE FUNCTION create_custom_room(
   p_player_id UUID,

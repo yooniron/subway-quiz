@@ -153,8 +153,8 @@ export default function App() {
     const triggerCorrectEffects = (points: number) => {
         setShowCorrectOverlay(true);
         setFloatingPoints(points);
-        setTimeout(() => setShowCorrectOverlay(false), 400);
-        setTimeout(() => setFloatingPoints(null), 850);
+        setTimeout(() => setShowCorrectOverlay(false), 600);
+        setTimeout(() => setFloatingPoints(null), 900);
     };
 
     const fetchLeaderboard = async (lineId: number | null = null) => {
@@ -262,7 +262,7 @@ export default function App() {
                 p_target_score: targetScore
             });
             if (error) {
-                showToast('error', "맞춤 방 생성 에러: " + error.message);
+                showToast('error', "방 생성 에러: " + error.message);
                 await handleExitRoom();
                 return;
             }

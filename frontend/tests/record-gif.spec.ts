@@ -139,7 +139,7 @@ test.describe('Subway Quiz GitHub README 용 GIF 애니메이션 자동 캡처',
         await page1.waitForTimeout(500);
         await captureScreen();
 
-        await page1.click('text=맞춤 방 만들기');
+        await page1.click('text=방 만들기');
         await page1.waitForTimeout(500);
         await page1.fill('input[placeholder*="고수 모십니다"]', '스피드 퀴즈 대전!');
         await captureScreen();

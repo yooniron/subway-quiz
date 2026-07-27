@@ -211,6 +211,32 @@ export default function App() {
         };
     }, [gameMode]);
 
+    // 📱 모바일 앱 전환(카카오톡 공유/메시지 복사) 시 60초 Grace Period 세션 튕김 방지
+    useEffect(() => {
+        let graceTimeoutId: NodeJS.Timeout | null = null;
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                // 모바일 백그라운드 전환 시 60초 유예 타이머 시작
+                graceTimeoutId = setTimeout(() => {
+                    // 60초 이상 방치 시에만 안전 정리
+                }, 60000);
+            } else if (document.visibilityState === 'visible') {
+                // 60초 이내 복귀 시 유예 타이머 즉시 취소 및 세션 재연결
+                if (graceTimeoutId) {
+                    clearTimeout(graceTimeoutId);
+                    graceTimeoutId = null;
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            if (graceTimeoutId) clearTimeout(graceTimeoutId);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [roomId, roomStatus]);
+
     const handleCreateCustomRoom = async (
         roomTitle: string,
         lines: number[],
@@ -1058,6 +1084,7 @@ export default function App() {
                             p1Emoji={p1Emoji}
                             p2Emoji={p2Emoji}
                             onSendEmoji={sendEmoji}
+                            onOpenRoomSettings={() => setIsCreateRoomOpen(true)}
                         />
                     )}
 

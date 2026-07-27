@@ -1,8 +1,9 @@
 -- ==========================================
--- 실시간 대전 게임플레이 및 인터랙션 Stored Procedures
+-- 실시간 대전 게임플레이 및 인터랙션 Stored Procedures (100% 멱등성 보장)
 -- ==========================================
 
 -- [RPC 1] 원자적 정답 검증 및 스코어 반영/다음 퀴즈 출제 함수
+DROP FUNCTION IF EXISTS submit_answer(UUID, UUID, VARCHAR, INT);
 CREATE OR REPLACE FUNCTION submit_answer(
   p_room_id UUID,
   p_player_id UUID,
@@ -83,6 +84,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- [RPC 2] 양측 동의 스피드 패스 함수
+DROP FUNCTION IF EXISTS request_pass(UUID, UUID);
 CREATE OR REPLACE FUNCTION request_pass(
   p_room_id UUID,
   p_player_id UUID
@@ -121,6 +123,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- [RPC 3] 1대1 대전 종료 후 재경기 신청 함수
+DROP FUNCTION IF EXISTS request_rematch(UUID, UUID);
 CREATE OR REPLACE FUNCTION request_rematch(
   p_room_id UUID,
   p_player_id UUID
@@ -169,6 +172,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- [RPC 4] 대기실 방 설정 실시간 라이브 동기화 변경 함수
+DROP FUNCTION IF EXISTS update_room_settings(UUID, UUID, VARCHAR, BOOLEAN, VARCHAR, INT[], INT);
 CREATE OR REPLACE FUNCTION update_room_settings(
   p_room_id UUID,
   p_host_id UUID,

@@ -1,8 +1,9 @@
 -- ==========================================
--- 시스템 세션 관리 및 유령방 청소 Stored Procedures
+-- 시스템 세션 관리 및 유령방 청소 Stored Procedures (100% 멱등성 보장)
 -- ==========================================
 
 -- [RPC 1] 30초 이상 무응답 유령방 자동 청소
+DROP FUNCTION IF EXISTS cleanup_ghost_rooms();
 CREATE OR REPLACE FUNCTION cleanup_ghost_rooms()
 RETURNS INT AS $$
 DECLARE
@@ -19,6 +20,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- [RPC 2] 방장 핑 갱신 및 이탈 여부 감지 함수
+DROP FUNCTION IF EXISTS check_host_presence(UUID, UUID);
 CREATE OR REPLACE FUNCTION check_host_presence(
   p_room_id UUID,
   p_player_id UUID

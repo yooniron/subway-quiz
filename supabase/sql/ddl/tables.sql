@@ -1,5 +1,5 @@
 -- ==========================================
--- 1. 역 정보 마스터 테이블
+-- 1. DDL: 역 정보 마스터 테이블 (멱등성 보장)
 -- ==========================================
 CREATE TABLE IF NOT EXISTS stations (
   id INT PRIMARY KEY,
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS stations (
 );
 
 -- ==========================================
--- 2. 지하철 노선 마스터 테이블
+-- 2. DDL: 지하철 노선 마스터 테이블 (멱등성 보장)
 -- ==========================================
 CREATE TABLE IF NOT EXISTS lines (
   id INT PRIMARY KEY,
@@ -18,18 +18,27 @@ CREATE TABLE IF NOT EXISTS lines (
 );
 
 -- ==========================================
--- 3. 역 간 연결 관계 테이블 (인접 그래프 모델)
+-- 3. DDL: 역 간 연결 관계 테이블 (인접 그래프 모델)
 -- ==========================================
 CREATE TABLE IF NOT EXISTS station_connections (
   id SERIAL PRIMARY KEY,
   line_id INT REFERENCES lines(id) ON DELETE CASCADE,
   from_station_id INT REFERENCES stations(id) ON DELETE CASCADE,
-  to_station_id INT REFERENCES stations(id) ON DELETE CASCADE,
-  CONSTRAINT unique_connection UNIQUE (line_id, from_station_id, to_station_id)
+  to_station_id INT REFERENCES stations(id) ON DELETE CASCADE
 );
 
+-- Unique Constraint 멱등 생성
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'unique_connection'
+  ) THEN
+    ALTER TABLE station_connections ADD CONSTRAINT unique_connection UNIQUE (line_id, from_station_id, to_station_id);
+  END IF;
+END $$;
+
 -- ==========================================
--- 4. 실시간 게임 대전방 테이블 (맞춤방 & 비공개 지원)
+-- 4. DDL: 실시간 게임 대전방 테이블 (맞춤방 & 비공개 지원)
 -- ==========================================
 CREATE TABLE IF NOT EXISTS game_rooms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -57,7 +66,7 @@ CREATE TABLE IF NOT EXISTS game_rooms (
   selected_line_ids INT[],
   is_private BOOLEAN DEFAULT FALSE,
   room_password VARCHAR(50),
-  invite_code VARCHAR(10) UNIQUE,
+  invite_code VARCHAR(10),
 
   -- 퀴즈 데이터 칼럼
   quiz_target_id INT REFERENCES stations(id),
@@ -77,8 +86,18 @@ CREATE TABLE IF NOT EXISTS game_rooms (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Unique Constraint 멱등 생성
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'game_rooms_invite_code_key'
+  ) THEN
+    ALTER TABLE game_rooms ADD CONSTRAINT game_rooms_invite_code_key UNIQUE (invite_code);
+  END IF;
+END $$;
+
 -- ==========================================
--- 5. 싱글모드 전역 랭킹 테이블 (호선 정보 포함)
+-- 5. DDL: 싱글모드 전역 랭킹 테이블 (호선 정보 포함)
 -- ==========================================
 CREATE TABLE IF NOT EXISTS rankings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

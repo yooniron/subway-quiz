@@ -1,8 +1,9 @@
 -- ==========================================
--- 매치메이킹 및 방 생성/조회 Stored Procedures
+-- 매치메이킹 및 방 생성/조회 Stored Procedures (100% 멱등성 보장)
 -- ==========================================
 
 -- [RPC 1] 일반 대전방 매치메이킹 (동일 호선 조합 필터 매칭)
+DROP FUNCTION IF EXISTS join_or_create_room(UUID, INT[]);
 CREATE OR REPLACE FUNCTION join_or_create_room(
   p_player_id UUID,
   p_selected_line_ids INT[] DEFAULT NULL
@@ -48,6 +49,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- [RPC 2] 커스텀 맞춤 방 생성 (방 제목, 호선 선택, 비공개/비밀번호, 목표 점수 지원)
+DROP FUNCTION IF EXISTS create_custom_room(UUID, VARCHAR, INT[], BOOLEAN, VARCHAR, INT);
 CREATE OR REPLACE FUNCTION create_custom_room(
   p_player_id UUID,
   p_room_title VARCHAR(100) DEFAULT '즐거운 지하철 스피드 대전 방',
@@ -79,6 +81,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- [RPC 3] 비밀번호/초대코드 비공개 방 입장
+DROP FUNCTION IF EXISTS join_private_room(UUID, VARCHAR, VARCHAR, UUID);
 CREATE OR REPLACE FUNCTION join_private_room(
   p_player_id UUID,
   p_invite_code VARCHAR DEFAULT NULL,
@@ -129,7 +132,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- [RPC 4] 활성화된 로비 방 목록 조회
+-- [RPC 4] 활성화된 로비 방 목록 조회 (42P13 리턴 타입 변경 에러 방지 DROP 처리)
+DROP FUNCTION IF EXISTS get_active_lobbies();
 CREATE OR REPLACE FUNCTION get_active_lobbies()
 RETURNS TABLE (
   room_id UUID,
@@ -159,6 +163,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- [RPC 5] 방 정보 단건 상세 조회
+DROP FUNCTION IF EXISTS get_room_details(UUID);
 CREATE OR REPLACE FUNCTION get_room_details(p_room_id UUID)
 RETURNS TABLE (
   room_id UUID,

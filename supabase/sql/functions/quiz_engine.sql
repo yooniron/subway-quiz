@@ -1,8 +1,9 @@
 -- ==========================================
--- 퀴즈 무작위 생성 및 중복 출제 방지 Stored Procedures
+-- 퀴즈 무작위 생성 및 중복 출제 방지 Stored Procedures (100% 멱등성 보장)
 -- ==========================================
 
 -- [RPC 1] 멀티플레이 실시간 퀴즈 생성 및 방 정보 업데이트 함수 (호선 필터 & 중복 방지 반영)
+DROP FUNCTION IF EXISTS generate_next_quiz(UUID, INT[]);
 CREATE OR REPLACE FUNCTION generate_next_quiz(
   p_room_id UUID,
   p_exclude_station_ids INT[] DEFAULT NULL
@@ -112,6 +113,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- [RPC 2] 싱글모드 전용 호선 필터 및 중복 출제 방지 지원 무작위 퀴즈 추출 함수
+DROP FUNCTION IF EXISTS get_single_quiz(INT[], INT[]);
 CREATE OR REPLACE FUNCTION get_single_quiz(
   p_selected_line_ids INT[] DEFAULT NULL,
   p_exclude_station_ids INT[] DEFAULT NULL

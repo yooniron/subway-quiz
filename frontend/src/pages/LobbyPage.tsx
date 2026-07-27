@@ -200,7 +200,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                     )}
                 </div>
 
-                {/* 2. 하단 배치: 액션 컨트롤러 (빠른 매칭, 맞춤 방 생성, 초대코드 입장, 새로고침) */}
+                {/* 2. 하단 배치: 액션 컨트롤러 (빠른 매칭, 방 생성, 초대코드 입장, 새로고침) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                     <button
                         onClick={onQuickMatch}
@@ -215,7 +215,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                         className="py-3.5 px-4 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-gray-950 font-black text-xs rounded-2xl shadow-xl shadow-amber-400/20 transition-transform active:scale-95 flex items-center justify-center gap-1.5 group border border-amber-300/40"
                     >
                         <PlusCircle className="w-4 h-4 group-hover:scale-110 transition-transform text-gray-950" />
-                        맞춤 방 만들기
+                        방 만들기
                     </button>
 
                     <button

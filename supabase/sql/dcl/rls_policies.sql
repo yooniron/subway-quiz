@@ -34,7 +34,7 @@ CREATE POLICY "Allow public read on rankings" ON rankings FOR SELECT TO anon, au
 DROP POLICY IF EXISTS "Allow public insert on rankings" ON rankings;
 CREATE POLICY "Allow public insert on rankings" ON rankings FOR INSERT TO anon, authenticated WITH CHECK (true);
 
--- 3) Realtime 게시판 중복 추가 방지 (멱등성 검사)
+-- 3) Realtime 게시판 중복 추가 42710 에러 방지 (사전 검사 + EXCEPTION 핸들러 2중 안심 장치)
 DO $$ 
 BEGIN 
   IF NOT EXISTS (
@@ -45,4 +45,9 @@ BEGIN
   ) THEN
     ALTER PUBLICATION supabase_realtime ADD TABLE game_rooms;
   END IF;
+EXCEPTION
+  WHEN duplicate_object THEN
+    NULL; -- 42710 예외 캐치 후 안전 무시
+  WHEN OTHERS THEN
+    NULL;
 END $$;

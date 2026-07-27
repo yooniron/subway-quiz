@@ -164,7 +164,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
 
                     {/* 정답 타겟 퀴즈 역명 디스플레이 박스 */}
                     <div 
-                        className="flex-1 max-w-xs sm:max-w-md md:max-w-xl py-3 sm:py-5 px-3 sm:px-6 rounded-2xl sm:rounded-3xl border-2 sm:border-4 border-gray-800 bg-gray-900/90 shadow-2xl flex items-center justify-center min-h-[56px] sm:min-h-[80px]"
+                        className="flex-1 max-w-xs sm:max-w-md md:max-w-xl py-3 sm:py-5 px-3 sm:px-6 rounded-2xl sm:rounded-3xl border-2 sm:border-4 border-gray-800 bg-gray-900/90 shadow-2xl flex items-center justify-center min-h-[56px] sm:min-h-[80px] lcd-display-glow"
                         style={{ borderColor: quiz.color_code }}
                     >
                         <span 

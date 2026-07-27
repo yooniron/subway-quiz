@@ -4,7 +4,9 @@
   "description": "",
   "main": "sync.ts",
   "scripts": {
-    "sync": "tsx sync.ts"
+    "sync": "tsx sync.ts",
+    "backup:rankings": "tsx scripts/backup_rankings.ts",
+    "restore:rankings": "tsx scripts/restore_rankings.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

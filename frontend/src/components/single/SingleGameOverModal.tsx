@@ -10,6 +10,9 @@ interface SingleGameOverModalProps {
     onRestart: () => void;
     onExit: () => void;
     onOpenLeaderboard: () => void;
+    allCleared?: boolean;
+    answeredCount?: number;
+    timeLeft?: number;
 }
 
 export const SingleGameOverModal: React.FC<SingleGameOverModalProps> = ({
@@ -20,7 +23,10 @@ export const SingleGameOverModal: React.FC<SingleGameOverModalProps> = ({
     isRankSubmitted,
     onRestart,
     onExit,
-    onOpenLeaderboard
+    onOpenLeaderboard,
+    allCleared = false,
+    answeredCount = 0,
+    timeLeft = 0
 }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/80 backdrop-blur-md animate-card-pop">
@@ -31,12 +37,26 @@ export const SingleGameOverModal: React.FC<SingleGameOverModalProps> = ({
                     <Trophy className="w-12 h-12 animate-bounce" />
                 </div>
 
-                <h2 className="text-3xl font-black text-white mb-1">TIME UP!</h2>
-                <p className="text-xs text-gray-400 mb-6 font-medium">60초 싱글 챌린지가 완료되었습니다.</p>
+                {allCleared ? (
+                    <>
+                        <div className="text-4xl mb-2">🏆👑🎉</div>
+                        <h2 className="text-2xl font-black text-yellow-400 mb-1">전설의 지하철 고수!</h2>
+                        <p className="text-xs text-amber-300 mb-1 font-bold">{answeredCount}개 역 전체 돌파 완료!</p>
+                        <p className="text-xs text-gray-400 mb-6 font-medium">남은 시간: {timeLeft}초 | 시간 보너스: +{(timeLeft * 50).toLocaleString()}pts</p>
+                    </>
+                ) : (
+                    <>
+                        <h2 className="text-3xl font-black text-white mb-1">TIME UP!</h2>
+                        <p className="text-xs text-gray-400 mb-6 font-medium">60초 싱글 챌린지가 완료되었습니다.</p>
+                    </>
+                )}
 
                 <div className="bg-gray-950/60 border border-gray-800/80 rounded-2xl p-5 mb-6">
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">FINAL SCORE</span>
                     <p className="text-4xl font-black text-yellow-400 font-mono mt-1">{singleScore} <span className="text-sm font-normal text-gray-400">pts</span></p>
+                    <div className="mt-2 pt-2 border-t border-gray-800/60 flex items-center justify-center gap-1.5 text-xs text-amber-300 font-bold">
+                        <span>🎯 총 <strong className="text-yellow-400 font-black">{answeredCount}개 역</strong> 정답 달성!</span>
+                    </div>
                 </div>
 
                 {!isRankSubmitted ? (

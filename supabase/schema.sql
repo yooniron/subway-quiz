@@ -639,7 +639,8 @@ $$ LANGUAGE plpgsql;
 
 -- [RPC 5] 싱글모드 전용 호선 필터 지원 무작위 퀴즈 추출 함수
 CREATE OR REPLACE FUNCTION get_single_quiz(
-  p_selected_line_ids INT[] DEFAULT NULL
+  p_selected_line_ids INT[] DEFAULT NULL,
+  p_exclude_station_ids INT[] DEFAULT NULL
 )
 RETURNS TABLE (
   target_station_id INT,
@@ -672,12 +673,14 @@ BEGIN
   IF p_selected_line_ids IS NULL OR cardinality(p_selected_line_ids) = 0 THEN
     SELECT from_station_id, line_id INTO v_target_id, v_line_id
     FROM station_connections
+    WHERE (p_exclude_station_ids IS NULL OR from_station_id != ALL(p_exclude_station_ids))
     ORDER BY random()
     LIMIT 1;
   ELSE
     SELECT from_station_id, line_id INTO v_target_id, v_line_id
     FROM station_connections
     WHERE line_id = ANY(p_selected_line_ids)
+      AND (p_exclude_station_ids IS NULL OR from_station_id != ALL(p_exclude_station_ids))
     ORDER BY random()
     LIMIT 1;
   END IF;

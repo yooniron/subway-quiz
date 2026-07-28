@@ -6,7 +6,7 @@ import { SUBWAY_LINES } from '../components/common/LineSelectorModal';
 interface MainMenuPageProps {
     onFetchLeaderboard: () => void;
     selectedLineIds: number[];
-    onOpenLineSelectorWithMode: (mode: 'SINGLE' | 'MULTIPLAYER') => void;
+    onOpenLineSelectorWithMode: (mode: 'SINGLE' | 'MULTIPLAYER' | 'PRACTICE') => void;
     onStartPractice: () => void;
 }
 

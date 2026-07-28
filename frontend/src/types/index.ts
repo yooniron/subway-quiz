@@ -40,6 +40,6 @@ export interface LobbyRoom {
     target_score?: number;
 }
 
-export type GameMode = 'MENU' | 'SINGLE' | 'MULTIPLAYER' | 'LOBBY';
+export type GameMode = 'MENU' | 'SINGLE' | 'MULTIPLAYER' | 'LOBBY' | 'PRACTICE';
 export type PlayerRole = 'player_1' | 'player_2' | null;
 export type RoomStatus = 'WAITING' | 'PLAYING' | 'FINISHED';

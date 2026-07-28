@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Zap, Trophy, Layers, Settings2 } from 'lucide-react';
+import { Users, Zap, Trophy, Layers, Settings2, Compass } from 'lucide-react';
 import { Header } from '../components/common/Header';
 import { SUBWAY_LINES } from '../components/common/LineSelectorModal';
 
@@ -7,12 +7,14 @@ interface MainMenuPageProps {
     onFetchLeaderboard: () => void;
     selectedLineIds: number[];
     onOpenLineSelectorWithMode: (mode: 'SINGLE' | 'MULTIPLAYER') => void;
+    onStartPractice: () => void;
 }
 
 export const MainMenuPage: React.FC<MainMenuPageProps> = ({
     onFetchLeaderboard,
     selectedLineIds,
-    onOpenLineSelectorWithMode
+    onOpenLineSelectorWithMode,
+    onStartPractice
 }) => {
     const isAllSelected = selectedLineIds.length === SUBWAY_LINES.length;
 
@@ -96,6 +98,13 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
                     >
                         <Zap className="w-6 h-6 transition-transform group-hover:scale-110 text-gray-950" />
                         🎯 싱글 타임어택 (60초 챌린지)
+                    </button>
+                    <button 
+                        onClick={() => onOpenLineSelectorWithMode('PRACTICE')}
+                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-base rounded-2xl shadow-xl shadow-blue-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2 group border border-blue-400/30"
+                    >
+                        <Compass className="w-5 h-5 transition-transform group-hover:rotate-45 text-yellow-300" />
+                        🗺️ 호선 선택 4지선다 연습 모드
                     </button>
 
                     <button 

@@ -125,7 +125,7 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                             }`}
                         >
                             <Lightbulb className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-400" />
-                            <span>힌트 ({hintCount})</span>
+                            <span>힌트 ({hintCount >= 99 ? '∞' : hintCount})</span>
                         </button>
                     ) : (
                         <button 

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'feature/*'
+      - 'feature/**'
 
 permissions:
   pull-requests: write

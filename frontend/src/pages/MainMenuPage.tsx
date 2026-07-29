@@ -104,7 +104,7 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
                         className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-base rounded-2xl shadow-xl shadow-blue-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2 group border border-blue-400/30"
                     >
                         <Compass className="w-5 h-5 transition-transform group-hover:rotate-45 text-yellow-300" />
-                        🗺️ 호선 선택 4지선다 연습 모드
+                        🗺️ 연습 모드
                     </button>
 
                     <button 

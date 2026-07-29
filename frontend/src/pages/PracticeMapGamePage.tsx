@@ -5,6 +5,7 @@ import { CorrectOverlay } from '../components/common/CorrectOverlay';
 import type { Quiz } from '../types/index';
 import { ArrowLeft, HelpCircle, AlertCircle, Flame, Infinity, Hash } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { playCorrectSound, playWrongSound, playComboSound } from '../lib/sound';
 
 interface PracticeMapGamePageProps {
     quiz: Quiz | null;
@@ -94,8 +95,16 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
             setWrongToastMessage(null);
             confetti({ particleCount: 80, spread: 60 });
             setShowCorrect(true);
+
+            const nextCombo = practiceCombo + 1;
             setPracticeScore(prev => prev + 100);
-            setPracticeCombo(prev => prev + 1);
+            setPracticeCombo(nextCombo);
+
+            // 🎵 정답 및 콤보 사운드 플레이
+            playCorrectSound();
+            if (nextCombo >= 2) {
+                playComboSound(nextCombo);
+            }
 
             setTimeout(() => {
                 setShowCorrect(false);
@@ -103,6 +112,8 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                 onNextQuiz();
             }, 900);
         } else {
+            // 🎵 오답 사운드 플레이
+            playWrongSound();
             setPracticeCombo(0);
             setWrongToastMessage(`❌ [${option}역]은(는) 정답이 아닙니다! 다른 보기를 선택하세요.`);
             setTimeout(() => {

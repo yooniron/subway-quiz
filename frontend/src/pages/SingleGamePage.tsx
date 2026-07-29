@@ -72,6 +72,8 @@ export const SingleGamePage: React.FC<SingleGamePageProps> = ({
                 score={singleScore}
                 timeLeft={singleTimeLeft}
                 comboCount={comboCount}
+                floatingPoints={floatingPoints}
+                isShaking={isShaking}
                 onExit={onExit}
             />
 

@@ -25,7 +25,7 @@ interface LineSelectorModalProps {
     selectedLineIds: number[];
     onSelectLines: (lineIds: number[]) => void;
     onConfirmStart?: (selectedLineIds: number[]) => void;
-    targetMode?: 'SINGLE' | 'MULTIPLAYER' | null;
+    targetMode?: 'SINGLE' | 'MULTIPLAYER' | 'PRACTICE' | null;
 }
 
 export const LineSelectorModal: React.FC<LineSelectorModalProps> = ({
@@ -87,7 +87,7 @@ export const LineSelectorModal: React.FC<LineSelectorModalProps> = ({
                     </div>
                     <div>
                         <h3 className="text-lg font-black text-white">
-                            {targetMode === 'MULTIPLAYER' ? '1대1 대전 호선 지정' : '싱글 타임어택 호선 지정'}
+                            {targetMode === 'MULTIPLAYER' ? '1대1 대전 호선 지정' : targetMode === 'PRACTICE' ? '4지선다 연습 호선 지정' : '싱글 타임어택 호선 지정'}
                         </h3>
                         <p className="text-xs text-gray-400">퀴즈로 출제받을 호선을 고르세요 (다중 선택 가능)</p>
                     </div>

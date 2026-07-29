@@ -3,19 +3,21 @@ import { Flame } from 'lucide-react';
 import { FloatingPoints } from '../common/FloatingPoints';
 
 interface SingleScoreBoardProps {
-    singleScore: number;
-    singleTimeLeft: number;
+    score: number;
+    timeLeft: number;
     comboCount: number;
     floatingPoints: number | null;
     isShaking: boolean;
+    onExit: () => void;
 }
 
 export const SingleScoreBoard: React.FC<SingleScoreBoardProps> = ({
-    singleScore,
-    singleTimeLeft,
+    score,
+    timeLeft,
     comboCount,
     floatingPoints,
-    isShaking
+    isShaking,
+    onExit
 }) => {
     return (
         <div className={`flex gap-6 w-full max-w-2xl justify-between bg-gray-900/80 border border-gray-800 p-5 rounded-3xl shadow-2xl backdrop-blur-md relative overflow-hidden transition-transform duration-300 mb-6 ${
@@ -24,7 +26,7 @@ export const SingleScoreBoard: React.FC<SingleScoreBoardProps> = ({
             <div className="text-center flex-1 relative">
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">MY SCORE</p>
                 <p className="text-3xl font-black font-mono mt-1 text-white">
-                    {singleScore}
+                    {score}
                 </p>
                 <FloatingPoints points={floatingPoints} />
             </div>
@@ -46,8 +48,8 @@ export const SingleScoreBoard: React.FC<SingleScoreBoardProps> = ({
 
             <div className="text-center flex-1">
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">TIME LEFT</p>
-                <p className={`text-3xl font-black font-mono mt-1 ${singleTimeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-blue-400'}`}>
-                    {singleTimeLeft}s
+                <p className={`text-3xl font-black font-mono mt-1 ${timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-blue-400'}`}>
+                    {timeLeft}s
                 </p>
             </div>
         </div>

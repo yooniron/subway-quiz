@@ -3,7 +3,7 @@ import { QuizCard } from '../components/game/QuizCard';
 import { MultipleChoiceOptions } from '../components/practice/MultipleChoiceOptions';
 import { CorrectOverlay } from '../components/common/CorrectOverlay';
 import type { Quiz } from '../types/index';
-import { ArrowLeft, Sparkles, HelpCircle, AlertCircle, Zap } from 'lucide-react';
+import { ArrowLeft, HelpCircle, AlertCircle, Flame, Infinity, Hash } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface PracticeMapGamePageProps {
@@ -27,6 +27,8 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
     onExit
 }) => {
     const [practiceScore, setPracticeScore] = useState(0);
+    const [practiceCombo, setPracticeCombo] = useState(0);
+    const [quizCount, setQuizCount] = useState(0);
     const [showCorrect, setShowCorrect] = useState(false);
     const [showHint, setShowHint] = useState(false);
     const [options, setOptions] = useState<string[]>([]);
@@ -62,6 +64,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
         setOptions(final4);
         setSelectedOption(null);
         setIsProcessing(false);
+        setQuizCount(prev => prev + 1);
     }, [quiz]);
 
     if (!quiz) {
@@ -92,6 +95,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
             confetti({ particleCount: 80, spread: 60 });
             setShowCorrect(true);
             setPracticeScore(prev => prev + 100);
+            setPracticeCombo(prev => prev + 1);
 
             setTimeout(() => {
                 setShowCorrect(false);
@@ -99,6 +103,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                 onNextQuiz();
             }, 900);
         } else {
+            setPracticeCombo(0);
             setWrongToastMessage(`❌ [${option}역]은(는) 정답이 아닙니다! 다른 보기를 선택하세요.`);
             setTimeout(() => {
                 setWrongToastMessage(null);
@@ -119,8 +124,43 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                 </div>
             )}
 
-            {/* 상단 헤더 바 */}
-            <div className="w-full max-w-2xl flex items-center justify-between mb-4 bg-gray-900/80 p-4 rounded-3xl border border-gray-800 backdrop-blur-md shadow-lg">
+            {/* 🎯 Score / Combo / Timer 대시보드 (SingleScoreBoard 일관 스타일) */}
+            <div className="flex gap-4 w-full max-w-2xl justify-between bg-gray-900/80 border border-gray-800 p-5 rounded-3xl shadow-2xl backdrop-blur-md relative overflow-hidden mb-4">
+                {/* 🏅 Score */}
+                <div className="text-center flex-1">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">MY SCORE</p>
+                    <p className="text-3xl font-black font-mono mt-1 text-white">
+                        {practiceScore}
+                    </p>
+                </div>
+
+                {/* 🔥 Combo */}
+                <div className="flex flex-col items-center justify-center border-x border-gray-800/80 px-4 sm:px-6">
+                    <span className={`px-3 py-1 rounded-full text-xs font-black flex items-center gap-1 transition-all ${
+                        practiceCombo >= 10 
+                            ? 'bg-gradient-to-r from-red-500 to-amber-500 text-white animate-bounce shadow-lg shadow-red-500/30'
+                            : practiceCombo >= 5
+                            ? 'bg-yellow-400 text-gray-950 shadow-md'
+                            : practiceCombo >= 3
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-800 text-gray-500'
+                    }`}>
+                        <Flame className="w-4 h-4 fill-current" />
+                        {practiceCombo} COMBO
+                    </span>
+                </div>
+
+                {/* ⏱️ Timer (무제한) */}
+                <div className="text-center flex-1">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">TIME LEFT</p>
+                    <p className="text-2xl font-black font-mono mt-1 text-emerald-400 flex items-center justify-center gap-1">
+                        <Infinity className="w-6 h-6" />
+                    </p>
+                </div>
+            </div>
+
+            {/* 상단 서브 헤더 바 (호선 뱃지 + 퀴즈 카운트 + 메인메뉴) */}
+            <div className="w-full max-w-2xl flex items-center justify-between mb-4 bg-gray-900/60 p-3 rounded-2xl border border-gray-800/60 backdrop-blur-md">
                 <button 
                     onClick={onExit}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-2xl transition-transform active:scale-95 text-xs sm:text-sm"
@@ -134,11 +174,11 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                         className="px-3.5 py-1.5 font-black text-xs sm:text-sm text-white rounded-full flex items-center gap-1.5 shadow-md"
                         style={{ backgroundColor: quiz.color_code }}
                     >
-                        🚇 {quiz.line_name} 연습 중
+                        🚇 {quiz.line_name}
                     </span>
-                    <span className="px-3.5 py-1.5 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 font-black text-xs sm:text-sm rounded-full flex items-center gap-1.5 shadow-sm">
-                        <Zap className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        {practiceScore} pts
+                    <span className="px-3 py-1.5 bg-gray-800 border border-gray-700 text-gray-300 font-bold text-xs rounded-full flex items-center gap-1">
+                        <Hash className="w-3 h-3" />
+                        {quizCount}문제
                     </span>
                 </div>
             </div>

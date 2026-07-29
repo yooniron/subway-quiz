@@ -90,7 +90,7 @@ export default function App() {
     // 호선 선택 상태 관리 (기본값: 전체 1~9호선 선택)
     const [selectedLineIds, setSelectedLineIds] = useState<number[]>(() => SUBWAY_LINES.map(l => l.id));
     const [isLineSelectorOpen, setIsLineSelectorOpen] = useState(false);
-    const [targetMode, setTargetMode] = useState<'SINGLE' | 'MULTIPLAYER' | null>(null);
+    const [targetMode, setTargetMode] = useState<'SINGLE' | 'MULTIPLAYER' | 'PRACTICE' | null>(null);
 
     // 로비 및 대전방 세부 설정 관련 상태 변수들
     const [lobbies, setLobbies] = useState<LobbyRoom[]>([]);
@@ -387,7 +387,7 @@ export default function App() {
         }
     }, []);
 
-    const handleOpenLineSelectorWithMode = (mode: 'SINGLE' | 'MULTIPLAYER') => {
+    const handleOpenLineSelectorWithMode = (mode: 'SINGLE' | 'MULTIPLAYER' | 'PRACTICE') => {
         if (mode === 'MULTIPLAYER') {
             setGameMode('LOBBY');
         } else {
@@ -402,6 +402,8 @@ export default function App() {
             startSingleModeWithLines(lines);
         } else if (targetMode === 'MULTIPLAYER') {
             startMatchmakingWithLines(lines);
+        } else if (targetMode === 'PRACTICE') {
+            startPracticeMode(lines);
         }
     };
 

@@ -14,6 +14,7 @@ import { RoomWaitingModal } from './components/common/RoomWaitingModal';
 import { PasswordModal } from './components/common/PasswordModal';
 import { InviteCodeModal } from './components/common/InviteCodeModal';
 import { LineSelectorModal, SUBWAY_LINES } from './components/common/LineSelectorModal';
+import { playCorrectSound, playWrongSound, playComboSound, playVictorySound } from './lib/sound';
 
 export default function App() {
     // 유저 식별자
@@ -642,6 +643,7 @@ export default function App() {
 
     // 노선 완파 달성 처리
     const handleAllStationsCleared = () => {
+        playVictorySound();
         confetti({ particleCount: 200, spread: 120, origin: { y: 0.4 } });
         setTimeout(() => confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } }), 300);
         
@@ -702,6 +704,12 @@ export default function App() {
             const nextCombo = comboCount + 1;
             setComboCount(nextCombo);
 
+            // 🎵 정답 및 콤보 사운드 플레이
+            playCorrectSound();
+            if (nextCombo >= 2) {
+                playComboSound(nextCombo);
+            }
+
             // 정답 역 ID를 이력에 추가 (중복 출제 방지)
             const newAnswered = [...answeredStationIds, singleQuiz.target_station_id];
             setAnsweredStationIds(newAnswered);
@@ -735,6 +743,8 @@ export default function App() {
             loadSingleQuiz(selectedLineIds, newAnswered);
             focusInput();
         } else {
+            // 🎵 오답 사운드 플레이
+            playWrongSound();
             setComboCount(0);
             setIsInputShaking(true);
             setTimeout(() => setIsInputShaking(false), 450);
@@ -889,10 +899,12 @@ export default function App() {
                 const oppAdded = isP1 ? data.p2_score - prevP2 : data.p1_score - prevP1;
 
                 if (myAdded > 0) {
+                    playCorrectSound();
                     showToast('score', `⚡ 득점 성공! (+${myAdded}pts)`);
                     confetti({ particleCount: 60, spread: 50, origin: { y: 0.7 } });
                     triggerCorrectEffects(myAdded);
                 } else if (oppAdded > 0) {
+                    playWrongSound();
                     showToast('error', `⚠️ 상대방이 먼저 정답을 맞췄습니다! (+${oppAdded}pts)`);
                     setIsShaking(true);
                     setTimeout(() => setIsShaking(false), 500);
@@ -1033,6 +1045,7 @@ export default function App() {
                 setUserInput('');
                 focusInput();
             } else {
+                playWrongSound();
                 showToast('error', `❌ '${cleanInput}'역은 오답입니다!`);
                 setIsInputShaking(true);
                 setTimeout(() => setIsInputShaking(false), 450);

@@ -5,6 +5,7 @@ import { QuizCard } from '../components/game/QuizCard';
 import { AnswerForm } from '../components/game/AnswerForm';
 import { ScoreBoard } from '../components/game/ScoreBoard';
 import { CorrectOverlay } from '../components/common/CorrectOverlay';
+import { playVictorySound } from '../lib/sound';
 
 interface MultiplayerGamePageProps {
     roomId: string | null;
@@ -69,6 +70,13 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
     }
 
     const isGameOver = roomStatus === 'FINISHED' || scores.p1 >= targetScore || scores.p2 >= targetScore;
+    const isWinner = myRole === 'player_1' ? scores.p1 >= targetScore : scores.p2 >= targetScore;
+
+    React.useEffect(() => {
+        if (isGameOver && isWinner) {
+            playVictorySound();
+        }
+    }, [isGameOver, isWinner]);
 
     return (
         <div className="flex min-h-[100dvh] flex-col items-center justify-between bg-gray-950 px-3 sm:px-4 py-2 sm:py-6 text-white font-sans relative overflow-y-auto min-w-full pb-[env(safe-area-inset-bottom)]">

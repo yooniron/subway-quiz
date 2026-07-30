@@ -1,5 +1,4 @@
 import React from 'react';
-import { Users } from 'lucide-react';
 import type { Quiz, PlayerRole, RoomStatus } from '../types';
 import { QuizCard } from '../components/game/QuizCard';
 import { AnswerForm } from '../components/game/AnswerForm';
@@ -38,7 +37,7 @@ interface MultiplayerGamePageProps {
 }
 
 export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
-    roomId,
+    roomId: _roomId,
     roomStatus,
     quiz,
     scores,
@@ -64,19 +63,19 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
     onExitRoom,
     onRematchRequest
 }) => {
-    // 대기 중(WAITING) 상태일 경우 상위 RoomWaitingModal 모달에서 대기실을 단독 처리하도록 null 리턴
-    if (roomStatus === 'WAITING') {
-        return null;
-    }
-
     const isGameOver = roomStatus === 'FINISHED' || scores.p1 >= targetScore || scores.p2 >= targetScore;
     const isWinner = myRole === 'player_1' ? scores.p1 >= targetScore : scores.p2 >= targetScore;
 
     React.useEffect(() => {
-        if (isGameOver && isWinner) {
+        if (roomStatus !== 'WAITING' && isGameOver && isWinner) {
             playVictorySound();
         }
-    }, [isGameOver, isWinner]);
+    }, [isGameOver, isWinner, roomStatus]);
+
+    // 대기 중(WAITING) 상태일 경우 상위 RoomWaitingModal 모달에서 대기실을 단독 처리하도록 null 리턴
+    if (roomStatus === 'WAITING') {
+        return null;
+    }
 
     return (
         <div className="flex min-h-[100dvh] flex-col items-center justify-between bg-gray-950 px-3 sm:px-4 py-2 sm:py-6 text-white font-sans relative overflow-y-auto min-w-full pb-[env(safe-area-inset-bottom)]">

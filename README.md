@@ -112,6 +112,7 @@
 
 ## 📝 최근 업데이트 및 변경 사항 (자동 업데이트)
 <!-- RELEASE_LOGS_START -->
+- fix: ESLint v9 Flat Config 전환, 미사용 변수 정돈 및 protected 멤버 접근 완치 (2026-07-30)
 - feat: Web Audio API SFX 효과음 엔진 모듈 개발 및 3개 모드 사운드 연동 (2026-07-29)
 - refactor: 연습 모드 버튼 및 호선 선택 모달 문구 간결화 (2026-07-29)
 - fix: 연습모드 호선 선택 스타트 버그 완치 및 싱글/연습 Score·타이머·콤보 UI 정상화 (2026-07-28)
@@ -123,5 +124,4 @@
 - fix: AnswerForm onChange is not a function 런타임 에러 Universal Fallback 원천 수술 (#30) (2026-07-24)
 - feat: feature/45-mobile-typing-and-live-mirroring 개발 브랜치 병합 요청 (#28) (2026-07-24)
 - feat: 한글 자음/모음 초극세사 실시간 미러링, 노선 7대 테마 동기화, 모바일 자판 수술 & README GIF 반영 (#27) (2026-07-24)
-- fix: 모바일 정답란 타이핑 버그 원천 해결 및 전 기기 스크롤 Zero 한눈 피팅 UI 적용 (#26) (2026-07-24)
 <!-- RELEASE_LOGS_END -->

@@ -110,7 +110,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                 setShowCorrect(false);
                 setShowHint(false);
                 onNextQuiz();
-            }, 350);
+            }, 250);
         } else {
             // 🎵 오답 사운드 플레이
             playWrongSound();

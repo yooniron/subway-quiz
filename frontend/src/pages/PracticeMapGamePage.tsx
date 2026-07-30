@@ -93,24 +93,33 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
         if (targetClean === selectedClean) {
             setIsProcessing(true);
             setWrongToastMessage(null);
-            confetti({ particleCount: 80, spread: 60 });
             setShowCorrect(true);
 
             const nextCombo = practiceCombo + 1;
             setPracticeScore(prev => prev + 100);
             setPracticeCombo(nextCombo);
 
-            // 🎵 정답 및 콤보 사운드 플레이
-            playCorrectSound();
-            if (nextCombo >= 2) {
-                playComboSound(nextCombo);
-            }
+            // ⚡ 모바일 UI 프리즈 방지: 파티클 경량화 & 1프레임 비동기 렌더링 스케줄링
+            requestAnimationFrame(() => {
+                confetti({
+                    particleCount: 35,
+                    spread: 55,
+                    origin: { y: 0.6 },
+                    disableForReducedMotion: true
+                });
+
+                // 🎵 정답 및 콤보 사운드 플레이
+                playCorrectSound();
+                if (nextCombo >= 2) {
+                    playComboSound(nextCombo);
+                }
+            });
 
             setTimeout(() => {
                 setShowCorrect(false);
                 setShowHint(false);
                 onNextQuiz();
-            }, 900);
+            }, 700);
         } else {
             // 🎵 오답 사운드 플레이
             playWrongSound();

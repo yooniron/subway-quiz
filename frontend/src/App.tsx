@@ -726,7 +726,9 @@ export default function App() {
             } else if (nextCombo >= 10 && nextCombo % 5 === 0) {
                 timeBonus = 5;
                 addedPoints += 500;
-                confetti({ particleCount: 80, spread: 60 });
+                requestAnimationFrame(() => {
+                    confetti({ particleCount: 40, spread: 55, origin: { y: 0.6 }, disableForReducedMotion: true });
+                });
                 showToast('score', `👑 ${nextCombo} COMBO 폭주! +5초 & +500pts!`);
             } else {
                 showToast('success', `⭕ 정답입니다! (+${addedPoints}pts)`);

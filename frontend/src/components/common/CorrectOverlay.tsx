@@ -13,8 +13,8 @@ export const CorrectOverlay: React.FC<CorrectOverlayProps> = ({ show, isVisible,
 
     return (
         <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
-            <div className="flex flex-col items-center justify-center bg-gray-950/85 backdrop-blur-xl px-14 py-10 rounded-3xl border-2 border-emerald-400 shadow-[0_0_60px_rgba(52,211,153,0.6)] animate-correct-pop">
-                <span className="text-7xl mb-2 animate-bounce">⭕</span>
+            <div className="flex flex-col items-center justify-center bg-gray-950/85 backdrop-blur-md px-10 py-8 sm:px-14 sm:py-10 rounded-3xl border-2 border-emerald-400 shadow-[0_0_40px_rgba(52,211,153,0.5)] animate-correct-pop will-change-transform transform-gpu">
+                <span className="text-6xl sm:text-7xl mb-2 animate-bounce">⭕</span>
                 <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-green-300 to-teal-200 tracking-widest uppercase drop-shadow-md">
                     CORRECT!
                 </span>

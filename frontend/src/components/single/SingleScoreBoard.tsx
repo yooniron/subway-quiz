@@ -17,7 +17,7 @@ export const SingleScoreBoard: React.FC<SingleScoreBoardProps> = ({
     comboCount,
     floatingPoints,
     isShaking,
-    onExit
+    onExit: _onExit
 }) => {
     return (
         <div className={`flex gap-6 w-full max-w-2xl justify-between bg-gray-900/80 border border-gray-800 p-5 rounded-3xl shadow-2xl backdrop-blur-md relative overflow-hidden transition-transform duration-300 mb-6 ${

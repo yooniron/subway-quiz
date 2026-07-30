@@ -24,6 +24,7 @@ interface SingleGamePageProps {
     isRankSubmitted: boolean;
     allCleared?: boolean;
     answeredCount?: number;
+    totalStationCount?: number;
     // 이벤트 핸들러
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onAnswerSubmit: (e: React.FormEvent) => void;

@@ -4,7 +4,6 @@ import { MultipleChoiceOptions } from '../components/practice/MultipleChoiceOpti
 import { CorrectOverlay } from '../components/common/CorrectOverlay';
 import type { Quiz } from '../types/index';
 import { ArrowLeft, HelpCircle, AlertCircle, Flame, Infinity as InfinityIcon, Hash } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { playCorrectSound, playWrongSound, playComboSound } from '../lib/sound';
 
 interface PracticeMapGamePageProps {
@@ -99,27 +98,19 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
             setPracticeScore(prev => prev + 100);
             setPracticeCombo(nextCombo);
 
-            // ⚡ 모바일 UI 프리즈 방지: 파티클 경량화 & 1프레임 비동기 렌더링 스케줄링
-            requestAnimationFrame(() => {
-                confetti({
-                    particleCount: 35,
-                    spread: 55,
-                    origin: { y: 0.6 },
-                    disableForReducedMotion: true
-                });
-
-                // 🎵 정답 및 콤보 사운드 플레이
+            // 🎵 정답 및 콤보 사운드 플레이 (0ms 렌더링 스케줄링)
+            setTimeout(() => {
                 playCorrectSound();
                 if (nextCombo >= 2) {
                     playComboSound(nextCombo);
                 }
-            });
+            }, 0);
 
             setTimeout(() => {
                 setShowCorrect(false);
                 setShowHint(false);
                 onNextQuiz();
-            }, 700);
+            }, 350);
         } else {
             // 🎵 오답 사운드 플레이
             playWrongSound();

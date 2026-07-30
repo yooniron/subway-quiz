@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { supabase, generateUUID } from './lib/supabase';
+import { supabase, generateUUID, SUPABASE_URL, SUPABASE_ANON_KEY } from './lib/supabase';
 import type { Quiz, RankingEntry, Toast, GameMode, PlayerRole, RoomStatus, LobbyRoom } from './types';
 import { ToastContainer } from './components/common/ToastContainer';
 import { LeaderboardModal } from './components/leaderboard/LeaderboardModal';
@@ -72,7 +72,6 @@ export default function App() {
 
     // 퀴즈 중복 출제 방지 및 노선 완파 감지용 상태
     const [answeredStationIds, setAnsweredStationIds] = useState<number[]>([]);
-    const [totalStationCount, setTotalStationCount] = useState<number>(0);
     const [allClearedFlag, setAllClearedFlag] = useState(false);
 
     // 랭킹 및 닉네임 상태 변수들
@@ -136,7 +135,7 @@ export default function App() {
                     .from('game_rooms')
                     .update({ last_ping_at: new Date().toISOString() })
                     .eq('id', roomId);
-            } catch (e) {
+            } catch (_e) {
                 // 핑 실패 예외 방어
             }
         }, 5000);
@@ -171,7 +170,7 @@ export default function App() {
                 setRankingsList(data);
                 setIsLeaderboardOpen(true);
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "랭킹 데이터 통신 중 오류가 발생했습니다.");
         }
     };
@@ -185,7 +184,7 @@ export default function App() {
             } else if (data) {
                 setLobbies(data);
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "로비 목록 로딩 예외가 발생했습니다.");
         } finally {
             setIsLobbyLoading(false);
@@ -277,7 +276,7 @@ export default function App() {
                 const privacyText = isPrivate ? "🔒 비공개" : "🌐 공개";
                 showToast('success', `'${roomTitle}' (${privacyText}) 방을 개설하였습니다!`);
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "방 생성 중 예외가 발생했습니다.");
             await handleExitRoom();
         }
@@ -308,7 +307,7 @@ export default function App() {
             const targetId = targetPrivateRoom.id;
             setTargetPrivateRoom(null);
             await handleJoinRoomById(targetId);
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "비밀번호 확인 중 예외가 발생했습니다.");
         }
     };
@@ -346,7 +345,7 @@ export default function App() {
                     await handleJoinRoomById(roomInfo.room_id);
                 }
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "초대코드 처리 중 예외가 발생했습니다.");
         }
     };
@@ -369,7 +368,7 @@ export default function App() {
                 setRole(data[0].player_role as any);
                 showToast('success', "대전 방에 입장하였습니다!");
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "방 입장 중 예외가 발생했습니다.");
             await handleExitRoom();
         }
@@ -418,7 +417,7 @@ export default function App() {
             if (error) {
                 showToast('error', "READY 준비 상태 변경 실패: " + error.message);
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "READY 상태 변경 중 오류가 발생했습니다.");
         }
     };
@@ -439,7 +438,7 @@ export default function App() {
                     showToast('info', "⏩ 상대방에게 문제 패스를 요청했습니다.");
                 }
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "패스 처리 중 오류가 발생했습니다.");
         }
     };
@@ -456,7 +455,7 @@ export default function App() {
             } else {
                 showToast('success', "🚀 퀴즈 대전이 시작되었습니다!");
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "게임 시작 중 오류가 발생했습니다.");
         }
     };
@@ -469,7 +468,7 @@ export default function App() {
                     p_player_id: myId
                 });
             }
-        } catch (e) {
+        } catch (_e) {
             // 예외 방어
         } finally {
             setRoomId(null);
@@ -507,7 +506,7 @@ export default function App() {
                 showToast('error', "방 생성을 실패하였습니다. 다시 시도해 주세요.");
                 await handleExitRoom();
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "매칭 중 예외가 발생하여 메인 메뉴로 복귀합니다.");
             await handleExitRoom();
         }
@@ -571,7 +570,7 @@ export default function App() {
                 const randomItem = RANDOM_QUIZ_BANK[Math.floor(Math.random() * RANDOM_QUIZ_BANK.length)];
                 setSingleQuiz(randomItem);
             }
-        } catch (e) {
+        } catch (_e) {
             const randomItem = RANDOM_QUIZ_BANK[Math.floor(Math.random() * RANDOM_QUIZ_BANK.length)];
             setSingleQuiz(randomItem);
         }
@@ -635,7 +634,7 @@ export default function App() {
                 // 🏆 모든 역 정답 완파! 특별 달성 알림
                 handleAllStationsCleared();
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "퀴즈 로딩 예외가 발생했습니다.");
             setGameMode('MENU');
         }
@@ -788,7 +787,7 @@ export default function App() {
                 showToast('success', "🏆 명예의 전당 랭킹 등록 완료!");
                 fetchLeaderboard();
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "랭킹 저장 중 오류가 발생했습니다.");
         }
     };
@@ -943,7 +942,7 @@ export default function App() {
                     }
                 }
             })
-            .on('presence', { event: 'leave' }, async ({ key }) => {
+            .on('presence', { event: 'leave' }, async (_presenceInfo) => {
                 // 대전 중(PLAYING) 또는 종료 후 재경기 대기 중(FINISHED)일 때 상대가 방을 완전히 이탈한 경우
                 if (roomStatusRef.current === 'PLAYING' || roomStatusRef.current === 'FINISHED') {
                     showToast('error', "상대방이 방을 퇴장하여 대전 세션이 종료되었습니다.");
@@ -964,13 +963,13 @@ export default function App() {
         const handleBeforeUnload = () => {
             if (roomId) {
                 // keepalive fetch를 통해 브라우저 탭 종료 시에도 인증 헤더를 실어 동기 퇴장 처리 보장
-                const url = `${supabase.supabaseUrl}/rest/v1/rpc/exit_room`;
+                const url = `${SUPABASE_URL}/rest/v1/rpc/exit_room`;
                 fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'apikey': supabase.supabaseKey,
-                        'Authorization': `Bearer ${supabase.supabaseKey}`
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
                     },
                     body: JSON.stringify({ p_room_id: roomId, p_player_id: myId }),
                     keepalive: true
@@ -1052,7 +1051,7 @@ export default function App() {
                 setUserInput('');
                 focusInput();
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "정답 검증 중 예외가 발생했습니다.");
         }
     };
@@ -1068,7 +1067,7 @@ export default function App() {
             } else {
                 showToast('info', "⚡ 재경기를 신청하였습니다.");
             }
-        } catch (e: any) {
+        } catch (_e: any) {
             showToast('error', "재경기 신청 중 오류가 발생했습니다.");
         }
     };

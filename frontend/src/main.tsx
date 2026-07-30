@@ -23,6 +23,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    (window as any).__LAST_ERROR__ = error?.stack || error?.message || String(error);
     console.error("Uncaught error:", error, errorInfo);
   }
 

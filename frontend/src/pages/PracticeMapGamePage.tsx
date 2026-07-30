@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { QuizCard } from '../components/game/QuizCard';
 import { MultipleChoiceOptions } from '../components/practice/MultipleChoiceOptions';
 import { CorrectOverlay } from '../components/common/CorrectOverlay';
@@ -12,7 +12,6 @@ interface PracticeMapGamePageProps {
     onExit: () => void;
 }
 
-// 퀴즈 문제 호선별 헷갈리는 대표 오답 역 후보 뱅크 (전광판 미노출 역들로 셔플)
 const LINE_DISTRACTORS: Record<string, string[]> = {
     '1호선': ['청량리', '종로5가', '시청', '서울역', '용산', '노량진', '영등포', '구로', '부평', '인천', '수원', '의정부'],
     '2호선': ['을지로입구', '을지로3가', '충정로', '성수', '건대입구', '잠실', '삼성', '선릉', '역삼', '강남', '교대', '서초', '사당', '낙성대', '서울대입구', '신림', '신도림', '대림', '영등포구청', '당산', '합정', '홍대입구', '신촌', '이대', '아현'],
@@ -20,6 +19,19 @@ const LINE_DISTRACTORS: Record<string, string[]> = {
     '4호선': ['불암산', '노원', '창동', '혜화', '동대문', '충무로', '명동', '회현', '서울역', '삼각지', '이촌', '동작', '사당', '인덕원', '오이도'],
     '9호선': ['개화', '김포공항', '가양', '염창', '당산', '국회의사당', '여의도', '샛강', '노량진', '동작', '신논현', '선정릉', '봉은사', '종합운동장', '석촌', '올림픽공원', '중앙보훈병원']
 };
+
+// ⚡ 모바일 메모리 최적화: 매번 계산하지 않도록 미리 취합해 두기
+const ALL_DISTRACTORS_FLAT = Object.values(LINE_DISTRACTORS).flat();
+
+// ⚡ 모바일 CPU 부하 0%에 가까운 고성능 피셔-예이츠 셔플 함수
+function shuffleArray<T>(array: T[]): T[] {
+    const result = [...array];
+    for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+}
 
 export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
     quiz,
@@ -35,6 +47,10 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [wrongToastMessage, setWrongToastMessage] = useState<string | null>(null);
 
+    // 타이머 관리용 ref
+    const correctTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const wrongTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     // 퀴즈가 변경될 때마다 전광판 노출 역명을 100% 소거한 4지선다 보기 무작위 생성
     useEffect(() => {
         if (!quiz) return;
@@ -49,17 +65,17 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
             }
         });
 
-        // 해당 호선 및 수도권 전체 디스트랙터 후보군 취합
+        // 미리 정의된 Flat 배열 활용
         const linePool = LINE_DISTRACTORS[quiz.line_name] || LINE_DISTRACTORS['2호선'];
-        const allPool = Object.values(LINE_DISTRACTORS).flat();
-        const combinedPool = Array.from(new Set([...linePool, ...allPool]));
+        const combinedPool = Array.from(new Set([...linePool, ...ALL_DISTRACTORS_FLAT]));
 
-        // 전광판 노출 역 100% 사전 제외한 오답 후보 추출
+        // 전광판 노출 역 제외 + 피셔-예이츠 셔플 사용
         const validDistractors = combinedPool.filter(st => !excludedNames.has(st));
-        const shuffledDistractors = validDistractors.sort(() => Math.random() - 0.5);
+        const shuffledDistractors = shuffleArray(validDistractors);
 
-        // 정답 역 1개 + 문제 미노출 오답 3개 무작위 셔플
-        const final4 = [targetClean, ...shuffledDistractors.slice(0, 3)].sort(() => Math.random() - 0.5);
+        // 정답 역 1개 + 3개 무작위 보기를 고속 셔플
+        const final4 = shuffleArray([targetClean, ...shuffledDistractors.slice(0, 3)]);
+        
         setOptions(final4);
         setSelectedOption(null);
         setQuizCount(prev => prev + 1);
@@ -87,6 +103,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
         const selectedClean = option.replace(/역$/, '').trim();
 
         if (targetClean === selectedClean) {
+            if (wrongTimerRef.current) clearTimeout(wrongTimerRef.current);
             setWrongToastMessage(null);
             setShowCorrect(true);
 
@@ -94,25 +111,28 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
             setPracticeScore(prev => prev + 100);
             setPracticeCombo(nextCombo);
 
-            // 🎵 정답 및 콤보 사운드 플레이 (싱글 모드와 동일)
+            // 🎵 정답 사운드 실행
             playCorrectSound();
             if (nextCombo >= 2) {
                 playComboSound(nextCombo);
             }
 
-            // ⚡ 싱글 모드와 100% 동일: setTimeout 지연 및 락 없이 0ms 즉시 다음 문제 로드!
             setShowHint(false);
-            onNextQuiz();
-
-            setTimeout(() => {
+            
+            // ⚡ 싱글모드와 100% 동일한 600ms 딜레이 후 매끄럽게 다음 문제로 전환
+            if (correctTimerRef.current) clearTimeout(correctTimerRef.current);
+            correctTimerRef.current = setTimeout(() => {
                 setShowCorrect(false);
-            }, 300);
+                onNextQuiz();
+            }, 600);
+
         } else {
-            // 🎵 오답 사운드 플레이 (싱글 모드와 동일)
             playWrongSound();
             setPracticeCombo(0);
             setWrongToastMessage(`❌ [${option}역]은(는) 정답이 아닙니다! 다른 보기를 선택하세요.`);
-            setTimeout(() => {
+            
+            if (wrongTimerRef.current) clearTimeout(wrongTimerRef.current);
+            wrongTimerRef.current = setTimeout(() => {
                 setWrongToastMessage(null);
             }, 1500);
         }
@@ -131,9 +151,8 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                 </div>
             )}
 
-            {/* 🎯 Score / Combo / Timer 대시보드 (SingleScoreBoard 일관 스타일) */}
+            {/* 🎯 Score / Combo / Timer 대시보드 */}
             <div className="flex gap-4 w-full max-w-2xl justify-between bg-gray-900/80 border border-gray-800 p-5 rounded-3xl shadow-2xl backdrop-blur-md relative overflow-hidden mb-4">
-                {/* 🏅 Score */}
                 <div className="text-center flex-1">
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">MY SCORE</p>
                     <p className="text-3xl font-black font-mono mt-1 text-white">
@@ -141,7 +160,6 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                     </p>
                 </div>
 
-                {/* 🔥 Combo */}
                 <div className="flex flex-col items-center justify-center border-x border-gray-800/80 px-4 sm:px-6">
                     <span className={`px-3 py-1 rounded-full text-xs font-black flex items-center gap-1 transition-all ${
                         practiceCombo >= 10 
@@ -157,7 +175,6 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                     </span>
                 </div>
 
-                {/* ⏱️ Timer (무제한) */}
                 <div className="text-center flex-1">
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">TIME LEFT</p>
                     <p className="text-2xl font-black font-mono mt-1 text-emerald-400 flex items-center justify-center gap-1">
@@ -166,7 +183,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                 </div>
             </div>
 
-            {/* 상단 서브 헤더 바 (호선 뱃지 + 퀴즈 카운트 + 메인메뉴) */}
+            {/* 상단 서브 헤더 바 */}
             <div className="w-full max-w-2xl flex items-center justify-between mb-4 bg-gray-900/60 p-3 rounded-2xl border border-gray-800/60 backdrop-blur-md">
                 <button 
                     onClick={onExit}
@@ -203,7 +220,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                 />
             </div>
 
-            {/* 무제한 초성 힌트 안내 카드 */}
+            {/* 초성 힌트 안내 카드 */}
             {showHint && (
                 <div className="w-full max-w-2xl mb-3 p-3.5 bg-yellow-400/10 border border-yellow-400/40 rounded-2xl text-center backdrop-blur-md animate-pulse">
                     <p className="text-xs text-yellow-400 font-bold flex items-center justify-center gap-1">
@@ -220,7 +237,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                 </div>
             )}
 
-            {/* 🎮 2x2 반응형 4지선다 카드 스피드 터치 섹션 */}
+            {/* 🎮 2x2 반응형 4지선다 카드 */}
             <div className="w-full max-w-2xl mb-6 flex flex-col items-center">
                 <div className="w-full text-center mb-2">
                     <p className="text-xs font-black text-slate-400 tracking-wider">👇 문제에 안 나온 4개 보기 중 정답 역을 맞추세요!</p>

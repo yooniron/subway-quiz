@@ -72,6 +72,7 @@ export default function App() {
 
     // 퀴즈 중복 출제 방지 및 노선 완파 감지용 상태
     const [answeredStationIds, setAnsweredStationIds] = useState<number[]>([]);
+    const [totalStationCount, setTotalStationCount] = useState<number>(0);
     const [allClearedFlag, setAllClearedFlag] = useState(false);
 
     // 랭킹 및 닉네임 상태 변수들
@@ -175,7 +176,7 @@ export default function App() {
         }
     };
 
-    const fetchLobbies = async () => {
+    const fetchLobbies = React.useCallback(async () => {
         setIsLobbyLoading(true);
         try {
             const { data, error } = await supabase.rpc('get_active_lobbies');
@@ -189,7 +190,7 @@ export default function App() {
         } finally {
             setIsLobbyLoading(false);
         }
-    };
+    }, []);
 
     // 로비 진입 시 실시간 변경 구독 및 주기적 자가치유 리프레시
     useEffect(() => {
@@ -215,11 +216,11 @@ export default function App() {
             clearInterval(refetchInterval);
             supabase.removeChannel(channel);
         };
-    }, [gameMode]);
+    }, [gameMode, fetchLobbies]);
 
     // 📱 모바일 앱 전환(카카오톡 공유/메시지 복사) 시 60초 Grace Period 세션 튕김 방지
     useEffect(() => {
-        let graceTimeoutId: NodeJS.Timeout | null = null;
+        let graceTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'hidden') {
@@ -312,6 +313,31 @@ export default function App() {
         }
     };
 
+    const handleExitRoom = React.useCallback(async () => {
+        try {
+            if (roomId) {
+                await supabase.rpc('exit_room', {
+                    p_room_id: roomId,
+                    p_player_id: myId
+                });
+            }
+        } catch (_e) {
+            // 예외 방어
+        } finally {
+            setRoomId(null);
+            setRole(null);
+            setRoomStatus('WAITING');
+            setQuiz(null);
+            setScores({ p1: 0, p2: 0 });
+            setP1RematchReady(false);
+            setP2RematchReady(false);
+            setIsP2Connected(false);
+            setIsP2Ready(false);
+            setCurrentInviteCode(undefined);
+            setGameMode('MENU');
+        }
+    }, [roomId, myId]);
+
     const handleJoinByInviteCode = async (code: string) => {
         try {
             const { data, error } = await supabase.rpc('join_room_by_code', {
@@ -350,7 +376,7 @@ export default function App() {
         }
     };
 
-    const handleJoinRoomById = async (targetRoomId: string) => {
+    const handleJoinRoomById = React.useCallback(async (targetRoomId: string) => {
         try {
             setGameMode('MULTIPLAYER');
             setRoomStatus('WAITING');
@@ -372,7 +398,7 @@ export default function App() {
             showToast('error', "방 입장 중 예외가 발생했습니다.");
             await handleExitRoom();
         }
-    };
+    }, [myId, handleExitRoom]);
 
     // URL 쿼리 파라미터(?room=UUID) 감지 시 자동 대전방 직통 조인 랜딩 (V3 수리)
     useEffect(() => {
@@ -385,7 +411,7 @@ export default function App() {
             showToast('info', "🔗 초대 링크를 감지하여 대전방으로 이동합니다!");
             handleJoinRoomById(targetRoomId);
         }
-    }, []);
+    }, [handleJoinRoomById]);
 
     const handleOpenLineSelectorWithMode = (mode: 'SINGLE' | 'MULTIPLAYER' | 'PRACTICE') => {
         if (mode === 'MULTIPLAYER') {
@@ -457,31 +483,6 @@ export default function App() {
             }
         } catch (_e: any) {
             showToast('error', "게임 시작 중 오류가 발생했습니다.");
-        }
-    };
-
-    const handleExitRoom = async () => {
-        try {
-            if (roomId) {
-                await supabase.rpc('exit_room', {
-                    p_room_id: roomId,
-                    p_player_id: myId
-                });
-            }
-        } catch (_e) {
-            // 예외 방어
-        } finally {
-            setRoomId(null);
-            setRole(null);
-            setRoomStatus('WAITING');
-            setQuiz(null);
-            setScores({ p1: 0, p2: 0 });
-            setP1RematchReady(false);
-            setP2RematchReady(false);
-            setIsP2Connected(false);
-            setIsP2Ready(false);
-            setCurrentInviteCode(undefined);
-            setGameMode('MENU');
         }
     };
 
@@ -988,7 +989,7 @@ export default function App() {
             supabase.removeChannel(channel);
             channelRef.current = null;
         };
-    }, [roomId, gameMode, myId]);
+    }, [roomId, gameMode, myId, handleExitRoom, isP2Connected, role, roomStatus]);
 
     useEffect(() => {
         if (quiz?.target_station_id && gameMode === 'MULTIPLAYER') {
@@ -1189,6 +1190,7 @@ export default function App() {
                     isRankSubmitted={isRankSubmitted}
                     allCleared={allClearedFlag}
                     answeredCount={answeredStationIds.length}
+                    totalStationCount={totalStationCount}
                     onInputChange={(e) => setUserInput(e.target.value)}
                     onAnswerSubmit={handleSingleAnswerSubmit}
                     onUseHint={useSingleHint}

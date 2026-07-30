@@ -14,7 +14,7 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
     onFetchLeaderboard,
     selectedLineIds,
     onOpenLineSelectorWithMode,
-    onStartPractice
+    onStartPractice: _onStartPractice
 }) => {
     const isAllSelected = selectedLineIds.length === SUBWAY_LINES.length;
 

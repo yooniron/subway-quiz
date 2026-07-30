@@ -59,7 +59,9 @@ export const playCorrectSound = (): void => {
         gain2.connect(ctx.destination);
         osc2.start(now + 0.1);
         osc2.stop(now + 0.45);
-    } catch {}
+    } catch {
+        /* ignore audio error */
+    }
 };
 
 // ❌ 오답음 ("땡!" - Low Sawtooth Frequency Drop)
@@ -82,7 +84,9 @@ export const playWrongSound = (): void => {
         gain.connect(ctx.destination);
         osc.start(now);
         osc.stop(now + 0.3);
-    } catch {}
+    } catch {
+        /* ignore audio error */
+    }
 };
 
 // 🔥 콤보 피버 상승음
@@ -108,7 +112,9 @@ export const playComboSound = (comboCount: number): void => {
         gain.connect(ctx.destination);
         osc.start(now);
         osc.stop(now + 0.2);
-    } catch {}
+    } catch {
+        /* ignore audio error */
+    }
 };
 
 // 👑 승리 & 완파 팡파레 아르페지오 (C Major Arpeggio: C5 -> E5 -> G5 -> C6)
@@ -134,7 +140,9 @@ export const playVictorySound = (): void => {
             osc.start(noteTime);
             osc.stop(noteTime + 0.35);
         });
-    } catch {}
+    } catch {
+        /* ignore audio error */
+    }
 };
 
 // 🔘 버튼 터치/클릭음
@@ -157,5 +165,7 @@ export const playClickSound = (): void => {
         gain.connect(ctx.destination);
         osc.start(now);
         osc.stop(now + 0.04);
-    } catch {}
+    } catch {
+        /* ignore audio error */
+    }
 };

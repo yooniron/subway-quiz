@@ -3,7 +3,7 @@ import { QuizCard } from '../components/game/QuizCard';
 import { MultipleChoiceOptions } from '../components/practice/MultipleChoiceOptions';
 import { CorrectOverlay } from '../components/common/CorrectOverlay';
 import type { Quiz } from '../types/index';
-import { ArrowLeft, HelpCircle, AlertCircle, Flame, Infinity, Hash } from 'lucide-react';
+import { ArrowLeft, HelpCircle, AlertCircle, Flame, Infinity as InfinityIcon, Hash } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playCorrectSound, playWrongSound, playComboSound } from '../lib/sound';
 
@@ -165,7 +165,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                 <div className="text-center flex-1">
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">TIME LEFT</p>
                     <p className="text-2xl font-black font-mono mt-1 text-emerald-400 flex items-center justify-center gap-1">
-                        <Infinity className="w-6 h-6" />
+                        <InfinityIcon className="w-6 h-6" />
                     </p>
                 </div>
             </div>

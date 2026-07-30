@@ -77,7 +77,7 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
                 document.body.removeChild(textArea);
             }
             showToast('success', `🔑 초대 코드 [${inviteCode}]가 클립보드에 복사되었습니다!`);
-        } catch (err) {
+        } catch (_err) {
             showToast('error', "초대 코드 복사에 실패했습니다.");
         }
     };
@@ -96,7 +96,7 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
                 await navigator.share(shareData);
                 showToast('success', "📲 카카오톡 및 모바일 메신저 공유 창이 실행되었습니다!");
                 return;
-            } catch (err) {
+            } catch (_err) {
                 // 공유창 취소 시
             }
         }
@@ -115,7 +115,7 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
                 document.body.removeChild(textArea);
             }
             showToast('success', "🔗 초대 링크가 클립보드에 복사되었습니다!");
-        } catch (err) {
+        } catch (_err) {
             showToast('error', "초대 링크 복사에 실패했습니다.");
         }
     };

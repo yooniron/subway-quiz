@@ -34,7 +34,6 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
     const [options, setOptions] = useState<string[]>([]);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [wrongToastMessage, setWrongToastMessage] = useState<string | null>(null);
-    const [isProcessing, setIsProcessing] = useState(false);
 
     // 퀴즈가 변경될 때마다 전광판 노출 역명을 100% 소거한 4지선다 보기 무작위 생성
     useEffect(() => {
@@ -63,7 +62,6 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
         const final4 = [targetClean, ...shuffledDistractors.slice(0, 3)].sort(() => Math.random() - 0.5);
         setOptions(final4);
         setSelectedOption(null);
-        setIsProcessing(false);
         setQuizCount(prev => prev + 1);
     }, [quiz]);
 
@@ -83,14 +81,12 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
     }
 
     const handleSelectOption = (option: string) => {
-        if (isProcessing) return;
         setSelectedOption(option);
 
         const targetClean = quiz.target_station_name.replace(/역$/, '').trim();
         const selectedClean = option.replace(/역$/, '').trim();
 
         if (targetClean === selectedClean) {
-            setIsProcessing(true);
             setWrongToastMessage(null);
             setShowCorrect(true);
 
@@ -98,27 +94,27 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
             setPracticeScore(prev => prev + 100);
             setPracticeCombo(nextCombo);
 
-            // 🎵 정답 및 콤보 사운드 플레이 (0ms 렌더링 스케줄링)
-            setTimeout(() => {
-                playCorrectSound();
-                if (nextCombo >= 2) {
-                    playComboSound(nextCombo);
-                }
-            }, 0);
+            // 🎵 정답 및 콤보 사운드 플레이 (싱글 모드와 동일)
+            playCorrectSound();
+            if (nextCombo >= 2) {
+                playComboSound(nextCombo);
+            }
+
+            // ⚡ 싱글 모드와 100% 동일: setTimeout 지연 및 락 없이 0ms 즉시 다음 문제 로드!
+            setShowHint(false);
+            onNextQuiz();
 
             setTimeout(() => {
                 setShowCorrect(false);
-                setShowHint(false);
-                onNextQuiz();
-            }, 250);
+            }, 300);
         } else {
-            // 🎵 오답 사운드 플레이
+            // 🎵 오답 사운드 플레이 (싱글 모드와 동일)
             playWrongSound();
             setPracticeCombo(0);
             setWrongToastMessage(`❌ [${option}역]은(는) 정답이 아닙니다! 다른 보기를 선택하세요.`);
             setTimeout(() => {
                 setWrongToastMessage(null);
-            }, 2000);
+            }, 1500);
         }
     };
 
@@ -234,7 +230,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                     selectedOption={selectedOption}
                     targetStationName={quiz.target_station_name}
                     onSelectOption={handleSelectOption}
-                    disabled={isProcessing}
+                    disabled={false}
                 />
             </div>
         </div>

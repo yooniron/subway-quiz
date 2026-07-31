@@ -18,6 +18,8 @@ interface SingleGamePageProps {
     isInputShaking: boolean;
     isShaking: boolean;
     showCorrectOverlay: boolean;
+    feedbackType?: 'correct' | 'wrong' | 'opponent';
+    feedbackMessage?: string;
     floatingPoints: number | null;
     inputRef: React.RefObject<HTMLInputElement>;
     nicknameInput: string;
@@ -48,6 +50,8 @@ export const SingleGamePage: React.FC<SingleGamePageProps> = ({
     isInputShaking,
     isShaking,
     showCorrectOverlay,
+    feedbackType = 'correct',
+    feedbackMessage,
     floatingPoints,
     inputRef,
     nicknameInput,
@@ -65,8 +69,8 @@ export const SingleGamePage: React.FC<SingleGamePageProps> = ({
 }) => {
     return (
         <div className={`min-h-screen bg-gray-950 text-white font-sans flex flex-col items-center justify-center p-4 relative overflow-hidden transition-transform ${isShaking ? 'animate-shake' : ''}`}>
-            {/* 정답 팡파레 오버레이 */}
-            <CorrectOverlay isVisible={showCorrectOverlay} points={floatingPoints} />
+            {/* 정답/오답 팡파레 오버레이 */}
+            <CorrectOverlay isVisible={showCorrectOverlay} points={floatingPoints} type={feedbackType} message={feedbackMessage} />
 
             {/* 헤더 및 스코어보드 */}
             <SingleScoreBoard 

@@ -41,15 +41,18 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
     const [practiceScore, setPracticeScore] = useState(0);
     const [practiceCombo, setPracticeCombo] = useState(0);
     const [quizCount, setQuizCount] = useState(0);
-    const [showCorrect, setShowCorrect] = useState(false);
+    const [showOverlay, setShowOverlay] = useState(false);
+    const [feedbackType, setFeedbackType] = useState<'correct' | 'wrong'>('correct');
+    const [feedbackMessage, setFeedbackMessage] = useState<string | undefined>(undefined);
     const [showHint, setShowHint] = useState(false);
     const [options, setOptions] = useState<string[]>([]);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [wrongToastMessage, setWrongToastMessage] = useState<string | null>(null);
 
-    // 타이머 관리용 ref
+    // 타이머 및 중복 선택 방지 락용 ref
     const correctTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const wrongTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isTransitioningRef = useRef(false);
 
     // 퀴즈가 변경될 때마다 전광판 노출 역명을 100% 소거한 4지선다 보기 무작위 생성
     useEffect(() => {
@@ -79,6 +82,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
         setOptions(final4);
         setSelectedOption(null);
         setQuizCount(prev => prev + 1);
+        isTransitioningRef.current = false;
     }, [quiz]);
 
     if (!quiz) {
@@ -97,6 +101,8 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
     }
 
     const handleSelectOption = (option: string) => {
+        if (isTransitioningRef.current) return;
+        isTransitioningRef.current = true;
         setSelectedOption(option);
 
         const targetClean = quiz.target_station_name.replace(/역$/, '').trim();
@@ -105,7 +111,10 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
         if (targetClean === selectedClean) {
             if (wrongTimerRef.current) clearTimeout(wrongTimerRef.current);
             setWrongToastMessage(null);
-            setShowCorrect(true);
+
+            setFeedbackType('correct');
+            setFeedbackMessage(undefined);
+            setShowOverlay(true);
 
             const nextCombo = practiceCombo + 1;
             setPracticeScore(prev => prev + 100);
@@ -119,29 +128,31 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
 
             setShowHint(false);
             
-            // ⚡ 싱글모드와 100% 동일한 600ms 딜레이 후 매끄럽게 다음 문제로 전환
             if (correctTimerRef.current) clearTimeout(correctTimerRef.current);
             correctTimerRef.current = setTimeout(() => {
-                setShowCorrect(false);
+                setShowOverlay(false);
                 onNextQuiz();
-            }, 600);
+            }, 500);
 
         } else {
             playWrongSound();
             setPracticeCombo(0);
-            setWrongToastMessage(`❌ [${option}역]은(는) 정답이 아닙니다! 다른 보기를 선택하세요.`);
-            
+            setFeedbackType('wrong');
+            setFeedbackMessage(`'${option}'역은 정답이 아닙니다!`);
+            setShowOverlay(true);
+
             if (wrongTimerRef.current) clearTimeout(wrongTimerRef.current);
             wrongTimerRef.current = setTimeout(() => {
-                setWrongToastMessage(null);
-            }, 1500);
+                setShowOverlay(false);
+                isTransitioningRef.current = false;
+            }, 500);
         }
     };
 
     return (
         <div className="flex flex-col items-center justify-between min-h-screen bg-gray-950 px-4 py-6 text-white font-sans selection:bg-yellow-400 selection:text-gray-950">
-            {/* 정답 축하 팝업 */}
-            <CorrectOverlay show={showCorrect} points={100} />
+            {/* 정답/오답 통합 피드백 팝업 */}
+            <CorrectOverlay show={showOverlay} points={feedbackType === 'correct' ? 100 : null} type={feedbackType} message={feedbackMessage} />
 
             {/* 오답 알림 토스트 바 */}
             {wrongToastMessage && (

@@ -112,6 +112,7 @@
 
 ## 📝 최근 업데이트 및 변경 사항 (자동 업데이트)
 <!-- RELEASE_LOGS_START -->
+- feat: 모든 게임 모드 정답/오답 연출 및 스무스 문제 전환 로직 개선 (Web Audio API 오토플레이 최적화) (2026-07-31)
 - feat: apply user optimized practice mode and fix IDE warnings (2026-07-30)
 - fix: ESLint v9 Flat Config 전환, 미사용 변수 정돈 및 protected 멤버 접근 완치 (2026-07-30)
 - feat: Web Audio API SFX 효과음 엔진 모듈 개발 및 3개 모드 사운드 연동 (2026-07-29)
@@ -123,5 +124,4 @@
 - feat: 모바일 카카오/네이티브 공유, 앱 전환 60초 세션 보존, 대기실 실시간 방 설정 변경 (#34) (2026-07-27)
 - fix: 앱 전체 10대 핵심 기능 전수조사 & 터치 가로막힘 및 메뉴 이동 버그 종합 수정 (#32) (#32) (2026-07-24)
 - fix: AnswerForm onChange is not a function 런타임 에러 Universal Fallback 원천 수술 (#30) (2026-07-24)
-- feat: feature/45-mobile-typing-and-live-mirroring 개발 브랜치 병합 요청 (#28) (2026-07-24)
 <!-- RELEASE_LOGS_END -->

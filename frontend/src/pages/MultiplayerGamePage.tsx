@@ -17,6 +17,8 @@ interface MultiplayerGamePageProps {
     isInputShaking: boolean;
     isShaking: boolean;
     showCorrectOverlay: boolean;
+    feedbackType?: 'correct' | 'wrong' | 'opponent';
+    feedbackMessage?: string;
     floatingPoints: number | null;
     inputRef: React.RefObject<HTMLInputElement>;
     showL1: boolean;
@@ -47,6 +49,8 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
     isInputShaking,
     isShaking,
     showCorrectOverlay,
+    feedbackType = 'correct',
+    feedbackMessage,
     floatingPoints,
     inputRef,
     showL1,
@@ -79,7 +83,7 @@ export const MultiplayerGamePage: React.FC<MultiplayerGamePageProps> = ({
 
     return (
         <div className="flex min-h-[100dvh] flex-col items-center justify-between bg-gray-950 px-3 sm:px-4 py-2 sm:py-6 text-white font-sans relative overflow-y-auto min-w-full pb-[env(safe-area-inset-bottom)]">
-            <CorrectOverlay show={showCorrectOverlay} />
+            <CorrectOverlay show={showCorrectOverlay} points={floatingPoints} type={feedbackType} message={feedbackMessage} />
 
             <ScoreBoard 
                 scores={scores}

@@ -2,13 +2,25 @@
 
 let audioCtx: AudioContext | null = null;
 
+const unlockAudio = () => {
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+    }
+};
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('pointerdown', unlockAudio, { once: false });
+    window.addEventListener('touchstart', unlockAudio, { once: false });
+    window.addEventListener('keydown', unlockAudio, { once: false });
+}
+
 const getAudioContext = (): AudioContext => {
     if (!audioCtx) {
         const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
         audioCtx = new AudioContextClass();
     }
     if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+        audioCtx.resume().catch(() => {});
     }
     return audioCtx;
 };

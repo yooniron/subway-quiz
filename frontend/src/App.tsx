@@ -86,7 +86,37 @@ export default function App() {
     const [isShaking, setIsShaking] = useState(false);
     const [isInputShaking, setIsInputShaking] = useState(false);
     const [showCorrectOverlay, setShowCorrectOverlay] = useState(false);
+    const [feedbackType, setFeedbackType] = useState<'correct' | 'wrong' | 'opponent'>('correct');
+    const [feedbackMessage, setFeedbackMessage] = useState<string | undefined>(undefined);
     const [floatingPoints, setFloatingPoints] = useState<number | null>(null);
+    const isSingleTransitioningRef = useRef(false);
+
+    const triggerCorrectEffects = (points: number, message?: string) => {
+        setFeedbackType('correct');
+        setFeedbackMessage(message);
+        setShowCorrectOverlay(true);
+        setFloatingPoints(points);
+        setTimeout(() => setShowCorrectOverlay(false), 500);
+        setTimeout(() => setFloatingPoints(null), 800);
+    };
+
+    const triggerWrongEffects = (message?: string) => {
+        setFeedbackType('wrong');
+        setFeedbackMessage(message);
+        setShowCorrectOverlay(true);
+        setIsInputShaking(true);
+        setTimeout(() => setIsInputShaking(false), 450);
+        setTimeout(() => setShowCorrectOverlay(false), 500);
+    };
+
+    const triggerOpponentEffects = (message?: string) => {
+        setFeedbackType('opponent');
+        setFeedbackMessage(message);
+        setShowCorrectOverlay(true);
+        setIsShaking(true);
+        setTimeout(() => setIsShaking(false), 500);
+        setTimeout(() => setShowCorrectOverlay(false), 500);
+    };
     
     // 호선 선택 상태 관리 (기본값: 전체 1~9호선 선택)
     const [selectedLineIds, setSelectedLineIds] = useState<number[]>(() => SUBWAY_LINES.map(l => l.id));
@@ -152,12 +182,7 @@ export default function App() {
         }, 2600);
     };
 
-    const triggerCorrectEffects = (points: number) => {
-        setShowCorrectOverlay(true);
-        setFloatingPoints(points);
-        setTimeout(() => setShowCorrectOverlay(false), 600);
-        setTimeout(() => setFloatingPoints(null), 900);
-    };
+
 
     const fetchLeaderboard = async (lineId: number | null = null) => {
         try {
@@ -691,7 +716,7 @@ export default function App() {
 
     const handleSingleAnswerSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!singleQuiz || isSingleOver) return;
+        if (!singleQuiz || isSingleOver || isSingleTransitioningRef.current) return;
 
         const cleanInput = userInput.trim();
         if (!cleanInput) return;
@@ -700,6 +725,7 @@ export default function App() {
         const cleanUser = cleanInput.replace(/역$/, '');
 
         if (cleanUser === cleanTarget) {
+            isSingleTransitioningRef.current = true;
             setUserInput('');
             const nextCombo = comboCount + 1;
             setComboCount(nextCombo);
@@ -742,14 +768,16 @@ export default function App() {
                 setSingleTimeLeft((prev) => prev + timeBonus);
             }
 
-            loadSingleQuiz(selectedLineIds, newAnswered);
-            focusInput();
+            setTimeout(() => {
+                loadSingleQuiz(selectedLineIds, newAnswered);
+                focusInput();
+                isSingleTransitioningRef.current = false;
+            }, 500);
         } else {
             // 🎵 오답 사운드 플레이
             playWrongSound();
             setComboCount(0);
-            setIsInputShaking(true);
-            setTimeout(() => setIsInputShaking(false), 450);
+            triggerWrongEffects(`'${cleanInput}'역은 오답입니다! (콤보 리셋)`);
             showToast('error', `❌ '${cleanInput}'역은 오답입니다! (콤보 리셋)`);
             setUserInput('');
             focusInput();
@@ -904,12 +932,11 @@ export default function App() {
                     playCorrectSound();
                     showToast('score', `⚡ 득점 성공! (+${myAdded}pts)`);
                     confetti({ particleCount: 60, spread: 50, origin: { y: 0.7 } });
-                    triggerCorrectEffects(myAdded);
+                    triggerCorrectEffects(myAdded, "득점 성공!");
                 } else if (oppAdded > 0) {
                     playWrongSound();
                     showToast('error', `⚠️ 상대방이 먼저 정답을 맞췄습니다! (+${oppAdded}pts)`);
-                    setIsShaking(true);
-                    setTimeout(() => setIsShaking(false), 500);
+                    triggerOpponentEffects("상대방이 먼저 정답을 맞췄습니다!");
                 }
 
                 setScores({ p1: data.p1_score, p2: data.p2_score });
@@ -1082,8 +1109,8 @@ export default function App() {
                 event: 'emoji',
                 payload: { emoji, senderId: myId }
             });
-            // 로컬에서도 즉시 트리거
-            if (role === 'player_1') {
+            const isP1 = role === 'player_1';
+            if (isP1) {
                 setP1Emoji(emoji);
                 setTimeout(() => setP1Emoji(null), 1500);
             } else {
@@ -1093,67 +1120,38 @@ export default function App() {
         }
     };
 
-    // 30초 스피드 대전 힌트 공개 플래그 (양끝 2단계 역 선공개 ➡️ 10초 뒤 직접 인접역 후공개)
-    const showL2 = true;                   // 1단계: 양끝 2단계 역(left_2, right_2)은 0초부터 항상 선공개
-    const showL1 = timeLeft <= 20;         // 2단계: 10초 경과(남은시간 20초 이하) 시 직접 인접역(left_1, right_1) 언락
-    const showHintChar = timeLeft <= 10;   // 3단계: 20초 경과(남은시간 10초 이하) 시 정답 초성 힌트 언락
-
     return (
-        <>
-            <ToastContainer toasts={toasts} />
-            <LeaderboardModal 
-                isOpen={isLeaderboardOpen}
-                onClose={() => setIsLeaderboardOpen(false)}
-                rankingsList={rankingsList}
-                myId={myId}
-                onFetchByLine={(lineId) => fetchLeaderboard(lineId)}
-            />
-
-            <LineSelectorModal 
-                isOpen={isLineSelectorOpen}
-                onClose={() => setIsLineSelectorOpen(false)}
-                selectedLineIds={selectedLineIds}
-                onSelectLines={(lines) => setSelectedLineIds(lines)}
-                onConfirmStart={(lines) => handleConfirmStart(lines)}
-                targetMode={targetMode}
-            />
-
-            <CreateRoomModal 
-                isOpen={isCreateRoomOpen}
-                onClose={() => setIsCreateRoomOpen(false)}
-                onCreateRoom={handleCreateCustomRoom}
-            />
-
-            <PasswordModal 
-                isOpen={isPasswordModalOpen}
-                roomTitle={targetPrivateRoom?.room_title || '비공개 대전방'}
-                onClose={() => {
-                    setIsPasswordModalOpen(false);
-                    setTargetPrivateRoom(null);
-                }}
-                onConfirm={handleConfirmPasswordJoin}
-            />
-
-            <InviteCodeModal 
-                isOpen={isInviteCodeModalOpen}
-                onClose={() => setIsInviteCodeModalOpen(false)}
-                onJoinByCode={handleJoinByInviteCode}
-            />
+        <div className="min-h-screen bg-gray-950 text-white font-sans relative overflow-x-hidden selection:bg-yellow-400 selection:text-gray-950">
+            <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-md px-4 pointer-events-none">
+                {toasts.map((toast) => (
+                    <div
+                        key={toast.id}
+                        className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-md border border-white/10 text-white font-bold text-sm sm:text-base animate-bounce ${
+                            toast.type === 'error'
+                                ? 'bg-rose-600/90 border-rose-400'
+                                : toast.type === 'score'
+                                ? 'bg-yellow-500/90 text-gray-950 border-yellow-300 font-extrabold'
+                                : toast.type === 'success'
+                                ? 'bg-emerald-600/90 border-emerald-400'
+                                : 'bg-blue-600/90 border-blue-400'
+                        }`}
+                    >
+                        <span>{toast.message}</span>
+                    </div>
+                ))}
+            </div>
 
             {gameMode === 'MENU' && (
                 <MainMenuPage 
-                    onFetchLeaderboard={() => fetchLeaderboard(null)}
+                    onStartSingle={() => startSingleModeWithLines(selectedLineIds)}
+                    onStartMultiplayer={() => setGameMode('LOBBY')}
+                    onStartPractice={() => setGameMode('PRACTICE')}
+                    onOpenLeaderboard={() => fetchLeaderboard(null)}
                     selectedLineIds={selectedLineIds}
-                    onOpenLineSelectorWithMode={handleOpenLineSelectorWithMode}
-                    onStartPractice={startPracticeMode}
-                />
-            )}
-
-            {gameMode === 'PRACTICE' && (
-                <PracticeMapGamePage 
-                    quiz={singleQuiz}
-                    onNextQuiz={loadNextPracticeQuiz}
-                    onExit={handleExitRoom}
+                    onOpenLineSelector={() => {
+                        setTargetMode(null);
+                        setIsLineSelectorOpen(true);
+                    }}
                 />
             )}
 
@@ -1161,12 +1159,12 @@ export default function App() {
                 <LobbyPage 
                     lobbies={lobbies}
                     isLoading={isLobbyLoading}
-                    onRefresh={fetchLobbies}
-                    onQuickMatch={() => startMatchmakingWithLines(selectedLineIds)}
-                    onOpenCreateRoom={() => setIsCreateRoomOpen(true)}
-                    onOpenInviteCodeModal={() => setIsInviteCodeModalOpen(true)}
-                    onJoinRoom={handleJoinRoomById}
-                    onJoinPrivateRoom={handleJoinPrivateRoom}
+                    myId={myId}
+                    nicknameInput={nicknameInput}
+                    onNicknameChange={(e) => setNicknameInput(e.target.value)}
+                    onRefreshLobbies={fetchLobbies}
+                    onCreateRoomOpen={() => setIsCreateRoomOpen(true)}
+                    onJoinRoom={handleJoinRoom}
                     onBackToMenu={() => setGameMode('MENU')}
                 />
             )}
@@ -1184,6 +1182,8 @@ export default function App() {
                     isInputShaking={isInputShaking}
                     isShaking={isShaking}
                     showCorrectOverlay={showCorrectOverlay}
+                    feedbackType={feedbackType}
+                    feedbackMessage={feedbackMessage}
                     floatingPoints={floatingPoints}
                     inputRef={inputRef}
                     nicknameInput={nicknameInput}
@@ -1236,6 +1236,8 @@ export default function App() {
                             isInputShaking={isInputShaking}
                             isShaking={isShaking}
                             showCorrectOverlay={showCorrectOverlay}
+                            feedbackType={feedbackType}
+                            feedbackMessage={feedbackMessage}
                             floatingPoints={floatingPoints}
                             inputRef={inputRef}
                             showL1={showL1}
@@ -1255,6 +1257,6 @@ export default function App() {
                     )}
                 </div>
             )}
-        </>
+        </div>
     );
 }

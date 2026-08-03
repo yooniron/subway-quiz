@@ -1120,38 +1120,67 @@ export default function App() {
         }
     };
 
+    // 30초 스피드 대전 힌트 공개 플래그 (양끝 2단계 역 선공개 ➡️ 10초 뒤 직접 인접역 후공개)
+    const showL2 = true;                   // 1단계: 양끝 2단계 역(left_2, right_2)은 0초부터 항상 선공개
+    const showL1 = timeLeft <= 20;         // 2단계: 10초 경과(남은시간 20초 이하) 시 직접 인접역(left_1, right_1) 언락
+    const showHintChar = timeLeft <= 10;   // 3단계: 20초 경과(남은시간 10초 이하) 시 정답 초성 힌트 언락
+
     return (
-        <div className="min-h-screen bg-gray-950 text-white font-sans relative overflow-x-hidden selection:bg-yellow-400 selection:text-gray-950">
-            <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-md px-4 pointer-events-none">
-                {toasts.map((toast) => (
-                    <div
-                        key={toast.id}
-                        className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-md border border-white/10 text-white font-bold text-sm sm:text-base animate-bounce ${
-                            toast.type === 'error'
-                                ? 'bg-rose-600/90 border-rose-400'
-                                : toast.type === 'score'
-                                ? 'bg-yellow-500/90 text-gray-950 border-yellow-300 font-extrabold'
-                                : toast.type === 'success'
-                                ? 'bg-emerald-600/90 border-emerald-400'
-                                : 'bg-blue-600/90 border-blue-400'
-                        }`}
-                    >
-                        <span>{toast.message}</span>
-                    </div>
-                ))}
-            </div>
+        <>
+            <ToastContainer toasts={toasts} />
+            <LeaderboardModal 
+                isOpen={isLeaderboardOpen}
+                onClose={() => setIsLeaderboardOpen(false)}
+                rankingsList={rankingsList}
+                myId={myId}
+                onFetchByLine={(lineId) => fetchLeaderboard(lineId)}
+            />
+
+            <LineSelectorModal 
+                isOpen={isLineSelectorOpen}
+                onClose={() => setIsLineSelectorOpen(false)}
+                selectedLineIds={selectedLineIds}
+                onSelectLines={(lines) => setSelectedLineIds(lines)}
+                onConfirmStart={(lines) => handleConfirmStart(lines)}
+                targetMode={targetMode}
+            />
+
+            <CreateRoomModal 
+                isOpen={isCreateRoomOpen}
+                onClose={() => setIsCreateRoomOpen(false)}
+                onCreateRoom={handleCreateCustomRoom}
+            />
+
+            <PasswordModal 
+                isOpen={isPasswordModalOpen}
+                roomTitle={targetPrivateRoom?.room_title || '비공개 대전방'}
+                onClose={() => {
+                    setIsPasswordModalOpen(false);
+                    setTargetPrivateRoom(null);
+                }}
+                onConfirm={handleConfirmPasswordJoin}
+            />
+
+            <InviteCodeModal 
+                isOpen={isInviteCodeModalOpen}
+                onClose={() => setIsInviteCodeModalOpen(false)}
+                onJoinByCode={handleJoinByInviteCode}
+            />
 
             {gameMode === 'MENU' && (
                 <MainMenuPage 
-                    onStartSingle={() => startSingleModeWithLines(selectedLineIds)}
-                    onStartMultiplayer={() => setGameMode('LOBBY')}
-                    onStartPractice={() => setGameMode('PRACTICE')}
-                    onOpenLeaderboard={() => fetchLeaderboard(null)}
+                    onFetchLeaderboard={() => fetchLeaderboard(null)}
                     selectedLineIds={selectedLineIds}
-                    onOpenLineSelector={() => {
-                        setTargetMode(null);
-                        setIsLineSelectorOpen(true);
-                    }}
+                    onOpenLineSelectorWithMode={handleOpenLineSelectorWithMode}
+                    onStartPractice={startPracticeMode}
+                />
+            )}
+
+            {gameMode === 'PRACTICE' && (
+                <PracticeMapGamePage 
+                    quiz={singleQuiz}
+                    onNextQuiz={loadNextPracticeQuiz}
+                    onExit={handleExitRoom}
                 />
             )}
 
@@ -1159,12 +1188,12 @@ export default function App() {
                 <LobbyPage 
                     lobbies={lobbies}
                     isLoading={isLobbyLoading}
-                    myId={myId}
-                    nicknameInput={nicknameInput}
-                    onNicknameChange={(e) => setNicknameInput(e.target.value)}
-                    onRefreshLobbies={fetchLobbies}
-                    onCreateRoomOpen={() => setIsCreateRoomOpen(true)}
-                    onJoinRoom={handleJoinRoom}
+                    onRefresh={fetchLobbies}
+                    onQuickMatch={() => startMatchmakingWithLines(selectedLineIds)}
+                    onOpenCreateRoom={() => setIsCreateRoomOpen(true)}
+                    onOpenInviteCodeModal={() => setIsInviteCodeModalOpen(true)}
+                    onJoinRoom={handleJoinRoomById}
+                    onJoinPrivateRoom={handleJoinPrivateRoom}
                     onBackToMenu={() => setGameMode('MENU')}
                 />
             )}
@@ -1257,6 +1286,6 @@ export default function App() {
                     )}
                 </div>
             )}
-        </div>
+        </>
     );
 }

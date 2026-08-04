@@ -112,6 +112,7 @@
 
 ## 📝 최근 업데이트 및 변경 사항 (자동 업데이트)
 <!-- RELEASE_LOGS_START -->
+- fix: 메인 메뉴 런타임 오류 수정 및 모달/연습모드 렌더링 블록 복원 (2026-08-04)
 - feat: 모든 게임 모드 정답/오답 연출 및 스무스 문제 전환 로직 개선 (Web Audio API 오토플레이 최적화) (2026-07-31)
 - feat: apply user optimized practice mode and fix IDE warnings (2026-07-30)
 - fix: ESLint v9 Flat Config 전환, 미사용 변수 정돈 및 protected 멤버 접근 완치 (2026-07-30)
@@ -123,5 +124,4 @@
 - feat: 퀴즈 중복 출제 방지, 싱글모드 노선 완파 감지, SQL 마이그레이션 모듈화 & 데이터 백업/복원 툴 구축 (#35) (2026-07-27)
 - feat: 모바일 카카오/네이티브 공유, 앱 전환 60초 세션 보존, 대기실 실시간 방 설정 변경 (#34) (2026-07-27)
 - fix: 앱 전체 10대 핵심 기능 전수조사 & 터치 가로막힘 및 메뉴 이동 버그 종합 수정 (#32) (#32) (2026-07-24)
-- fix: AnswerForm onChange is not a function 런타임 에러 Universal Fallback 원천 수술 (#30) (2026-07-24)
 <!-- RELEASE_LOGS_END -->

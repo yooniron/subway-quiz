@@ -575,10 +575,14 @@ export default function App() {
                 ? customLineIds 
                 : (selectedLineIds && selectedLineIds.length > 0 ? selectedLineIds : [1, 2, 3, 4, 9]);
 
-            const { data } = await supabase.rpc('get_single_quiz', { 
+            const rpcPromise = supabase.rpc('get_single_quiz', {
                 p_selected_line_ids: activeLineIds,
                 p_exclude_station_ids: []
             });
+            const timeoutPromise = new Promise<never>((_, reject) => {
+                setTimeout(() => reject(new Error('get_single_quiz timeout')), 4000);
+            });
+            const { data } = await Promise.race([rpcPromise, timeoutPromise]);
 
             if (data && data.length > 0) {
                 setSingleQuiz({

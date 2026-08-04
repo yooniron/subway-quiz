@@ -43,7 +43,7 @@ export const MultipleChoiceOptions: React.FC<MultipleChoiceOptionsProps> = ({
                         key={idx}
                         disabled={disabled}
                         onClick={() => onSelectOption(option)}
-                        className={`relative flex items-center justify-between p-4 rounded-2xl border-2 font-black text-base sm:text-lg transition-all active:scale-98 disabled:pointer-events-none shadow-lg ${cardStyle}`}
+                        className={`relative flex items-center justify-between p-4 rounded-2xl border-2 font-black text-base sm:text-lg transition-all active:scale-98 disabled:pointer-events-none shadow-lg ${disabled && !isSelected ? 'opacity-60' : ''} ${cardStyle}`}
                     >
                         <div className="flex items-center gap-3">
                             <span className="w-7 h-7 rounded-xl bg-gray-800 border border-gray-700 text-xs font-mono font-bold flex items-center justify-center text-yellow-400 shrink-0">

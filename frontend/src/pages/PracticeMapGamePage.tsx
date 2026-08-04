@@ -8,7 +8,7 @@ import { playCorrectSound, playWrongSound, playComboSound } from '../lib/sound';
 
 interface PracticeMapGamePageProps {
     quiz: Quiz | null;
-    onNextQuiz: () => void;
+    onNextQuiz: () => Promise<void>;
     onExit: () => void;
 }
 
@@ -48,6 +48,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
     const [options, setOptions] = useState<string[]>([]);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [wrongToastMessage, setWrongToastMessage] = useState<string | null>(null);
+    const [isTransitioning, setIsTransitioning] = useState(false);
 
     // 타이머 및 중복 선택 방지 락용 ref
     const correctTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -83,6 +84,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
         setSelectedOption(null);
         setQuizCount(prev => prev + 1);
         isTransitioningRef.current = false;
+        setIsTransitioning(false);
     }, [quiz]);
 
     if (!quiz) {
@@ -103,6 +105,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
     const handleSelectOption = (option: string) => {
         if (isTransitioningRef.current) return;
         isTransitioningRef.current = true;
+        setIsTransitioning(true);
         setSelectedOption(option);
 
         const targetClean = quiz.target_station_name.replace(/역$/, '').trim();
@@ -129,9 +132,11 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
             setShowHint(false);
             
             if (correctTimerRef.current) clearTimeout(correctTimerRef.current);
-            correctTimerRef.current = setTimeout(() => {
+            correctTimerRef.current = setTimeout(async () => {
+                // 다음 문제 데이터가 실제로 준비될 때까지 오버레이를 유지해
+                // "모달은 사라졌는데 화면은 멈춘" 죽은 구간이 생기지 않도록 함
+                await onNextQuiz();
                 setShowOverlay(false);
-                onNextQuiz();
             }, 500);
 
         } else {
@@ -145,6 +150,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
             wrongTimerRef.current = setTimeout(() => {
                 setShowOverlay(false);
                 isTransitioningRef.current = false;
+                setIsTransitioning(false);
             }, 500);
         }
     };
@@ -258,7 +264,7 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
                     selectedOption={selectedOption}
                     targetStationName={quiz.target_station_name}
                     onSelectOption={handleSelectOption}
-                    disabled={false}
+                    disabled={isTransitioning}
                 />
             </div>
         </div>

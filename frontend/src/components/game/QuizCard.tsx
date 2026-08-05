@@ -83,10 +83,10 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     return (
         <div 
             key={quiz.target_station_id} 
-            className="w-full max-w-2xl sm:max-w-3xl rounded-3xl sm:rounded-[2.5rem] bg-gray-950/95 p-3.5 sm:p-8 md:p-10 border-4 sm:border-8 border-gray-800 shadow-[0_30px_70px_rgba(0,0,0,0.8)] text-center relative overflow-hidden backdrop-blur-md animate-card-pop"
+            className="w-full max-w-2xl sm:max-w-3xl rounded-3xl sm:rounded-[2.5rem] bg-gray-950/95 p-3.5 sm:p-8 md:p-10 border-4 sm:border-8 border-gray-800 shadow-[0_30px_70px_rgba(0,0,0,0.8)] text-center relative overflow-hidden animate-card-pop"
         >
-            <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-25 pointer-events-none" style={{ backgroundColor: quiz.color_code }} />
-            <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full blur-3xl opacity-25 pointer-events-none" style={{ backgroundColor: quiz.color_code }} />
+            <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-xl opacity-25 pointer-events-none" style={{ backgroundColor: quiz.color_code }} />
+            <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full blur-xl opacity-25 pointer-events-none" style={{ backgroundColor: quiz.color_code }} />
 
             {/* 상단 노선 띠 헤더 (저작권 문제없는 독자 지하철 Train 엠블럼 적용) */}
             <div 
@@ -213,8 +213,8 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                 <div className="flex flex-col items-center w-1/5 relative">
                     <div className="flex items-center justify-center gap-1.5 mb-2">
                         {/* Pure CSS 지하철 객차 모듈 (창문 2개 + 노선 띠 + 헤드라이트) */}
-                        <div 
-                            className="w-12 h-6 sm:w-14 sm:h-7 rounded-lg border-2 border-white flex items-center justify-between px-1 shadow-xl animate-train-drive"
+                        <div
+                            className="w-12 h-6 sm:w-14 sm:h-7 rounded-lg border-2 border-white flex items-center justify-between px-1 shadow-xl"
                             style={{ backgroundColor: quiz.color_code }}
                         >
                             <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 shadow-sm" />
@@ -223,12 +223,12 @@ export const QuizCard: React.FC<QuizCardProps> = ({
                                 <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-xs bg-white/80 border border-black/20" />
                             </div>
                         </div>
-                        <span className="text-xs font-black text-yellow-400 animate-arrow-drive tracking-tighter hidden sm:inline">
+                        <span className="text-xs font-black text-yellow-400 tracking-tighter hidden sm:inline">
                             &lt;&lt;&lt;&lt;
                         </span>
                     </div>
-                    <div 
-                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-yellow-400 bg-white text-gray-950 font-black text-sm sm:text-base flex items-center justify-center animate-bounce shadow-[0_0_25px_rgba(250,204,21,0.8)]"
+                    <div
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-yellow-400 bg-white text-gray-950 font-black text-sm sm:text-base flex items-center justify-center shadow-[0_0_25px_rgba(250,204,21,0.8)]"
                     >
                         ?
                     </div>

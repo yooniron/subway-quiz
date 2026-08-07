@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+    html, body, button, input, p, span, h1, h2, h3, h4, h5, h6 {
+        word-break: keep-all;
+        overflow-wrap: break-word;
+    }
+}
+
 @layer utilities {
     /* 화면 및 입력 폼 흔들림(Shake) 애니메이션 정의 */
     @keyframes shake {

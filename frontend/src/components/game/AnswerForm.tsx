@@ -54,7 +54,7 @@ export const AnswerForm: React.FC<AnswerFormProps> = ({
                 onInput={(e: any) => handleInputChange(e)}
                 placeholder={placeholder}
                 style={colorCode && userInput.trim() !== '' ? { borderColor: colorCode, boxShadow: `0 0 20px ${colorCode}40` } : undefined}
-                className={`flex-1 px-4 sm:px-5 py-3 sm:py-3.5 min-h-[48px] rounded-2xl bg-gray-950 border-2 border-gray-800 text-white text-base sm:text-lg font-bold placeholder:text-gray-600 focus:outline-none focus:border-emerald-400 focus:shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all duration-300 ${
+                className={`flex-1 px-4 sm:px-5 py-3 sm:py-3.5 min-h-[48px] rounded-2xl bg-gray-950 border-2 border-gray-800 text-white text-base sm:text-lg font-bold placeholder:text-gray-600 focus:outline-none focus:border-emerald-400 focus:shadow-[0_0_20px_rgba(52,211,153,0.3)] [word-break:keep-all] break-keep transition-all duration-300 ${
                     disabled ? 'opacity-60 cursor-not-allowed bg-gray-900' : ''
                 } ${
                     activeShaking ? 'animate-shake border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] text-red-400' : ''

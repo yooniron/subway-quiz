@@ -4,6 +4,7 @@ import { supabase, generateUUID, SUPABASE_URL, SUPABASE_ANON_KEY } from './lib/s
 import type { Quiz, RankingEntry, Toast, GameMode, PlayerRole, RoomStatus, LobbyRoom } from './types';
 import { ToastContainer } from './components/common/ToastContainer';
 import { LeaderboardModal } from './components/leaderboard/LeaderboardModal';
+import { AchievementModal } from './components/achievement/AchievementModal';
 import { MainMenuPage } from './pages/MainMenuPage';
 import { SingleGamePage } from './pages/SingleGamePage';
 import { MultiplayerGamePage } from './pages/MultiplayerGamePage';
@@ -15,8 +16,25 @@ import { PasswordModal } from './components/common/PasswordModal';
 import { InviteCodeModal } from './components/common/InviteCodeModal';
 import { LineSelectorModal, SUBWAY_LINES } from './components/common/LineSelectorModal';
 import { playCorrectSound, playWrongSound, playComboSound, playVictorySound } from './lib/sound';
+import { 
+    loadAchievementData, 
+    recordAnswerEvent, 
+    recordSingleScoreEvent, 
+    recordHintUsed, 
+    recordPracticeAnswer, 
+    recordMultiplayerResult, 
+    getEquippedTitle 
+} from './utils/achievements';
 
 export default function App() {
+    // 업적 및 칭호 상태 변수
+    const [isAchievementModalOpen, setIsAchievementModalOpen] = useState(false);
+    const [equippedTitle, setEquippedTitle] = useState<string | null>(() => getEquippedTitle());
+    const [unlockedAchievementCount, setUnlockedAchievementCount] = useState<number>(() => {
+        const data = loadAchievementData();
+        return data.unlockedIds.length;
+    });
+
     // 유저 식별자
     const [myId] = useState<string>(() => {
         const saved = localStorage.getItem('subway_user_id');
@@ -116,6 +134,17 @@ export default function App() {
         setIsShaking(true);
         setTimeout(() => setIsShaking(false), 500);
         setTimeout(() => setShowCorrectOverlay(false), 500);
+    };
+
+    // 업적 달성 시 토스트 알림 및 축하 사운드 핸들러
+    const handleAchievementUnlocks = (newlyUnlocked: { title: string; rewardTitle: string; tier: string }[]) => {
+        if (newlyUnlocked && newlyUnlocked.length > 0) {
+            setUnlockedAchievementCount(prev => prev + newlyUnlocked.length);
+            newlyUnlocked.forEach(ach => {
+                showToast('score', `🎉 업적 달성! [${ach.title}] - 칭호 획득: [${ach.rewardTitle}]! 👑`);
+            });
+            playVictorySound();
+        }
     };
     
     // 호선 선택 상태 관리 (기본값: 전체 1~9호선 선택)
@@ -703,6 +732,14 @@ export default function App() {
         return () => clearInterval(interval);
     }, [gameMode, isSingleOver, singleTimeLeft]);
 
+    // 싱글 모드 게임 종료 시 스코어 업적 갱신
+    useEffect(() => {
+        if (isSingleOver && singleScore > 0) {
+            const scoreRes = recordSingleScoreEvent(singleScore, allClearedFlag);
+            handleAchievementUnlocks(scoreRes.newlyUnlocked);
+        }
+    }, [isSingleOver, singleScore, allClearedFlag]);
+
     const useSingleHint = () => {
         if (hintCount <= 0) {
             showToast('error', "남은 힌트 찬스가 없습니다!");
@@ -715,6 +752,11 @@ export default function App() {
         setHintCount((prev) => prev - 1);
         setIsHintActive(true);
         showToast('info', "💡 힌트 찬스가 활성화되었습니다!");
+        
+        // 🏆 업적 이벤트 기록 (힌트 사용)
+        const hintRes = recordHintUsed();
+        handleAchievementUnlocks(hintRes.newlyUnlocked);
+        
         focusInput();
     };
 
@@ -739,6 +781,15 @@ export default function App() {
             if (nextCombo >= 2) {
                 playComboSound(nextCombo);
             }
+
+            // 🏆 업적 이벤트 기록 (정답 및 콤보)
+            const lineId = SUBWAY_LINES.find(l => l.name === singleQuiz.line_name)?.id || 2;
+            const answerRes = recordAnswerEvent({
+                lineId,
+                currentCombo: nextCombo,
+                responseTimeMs: (60 - singleTimeLeft) * 1000
+            });
+            handleAchievementUnlocks(answerRes.newlyUnlocked);
 
             // 정답 역 ID를 이력에 추가 (중복 출제 방지)
             const newAnswered = [...answeredStationIds, singleQuiz.target_station_id];
@@ -1041,7 +1092,12 @@ export default function App() {
     useEffect(() => {
         if (gameMode !== 'MULTIPLAYER' || roomStatus !== 'FINISHED' || !roomId) return;
         
-        const isWinner = role === 'player_1' ? scores.p1 >= 1000 : scores.p2 >= 1000;
+        const isWinner = role === 'player_1' ? scores.p1 >= (currentTargetScore || 500) : scores.p2 >= (currentTargetScore || 500);
+        
+        // 🏆 업적 이벤트 기록 (1v1 대전 결과)
+        const multiRes = recordMultiplayerResult(isWinner);
+        handleAchievementUnlocks(multiRes.newlyUnlocked);
+
         if (!isWinner) return;
 
         const interval = setInterval(() => {
@@ -1050,7 +1106,7 @@ export default function App() {
         }, 1500);
 
         return () => clearInterval(interval);
-    }, [roomStatus, roomId, scores, role, gameMode]);
+    }, [roomStatus, roomId, scores, role, gameMode, currentTargetScore]);
 
     const handleAnswerSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -1077,6 +1133,14 @@ export default function App() {
             if (isCorrect) {
                 setUserInput('');
                 focusInput();
+
+                // 🏆 업적 이벤트 기록 (멀티플레이어 정답)
+                const lineId = SUBWAY_LINES.find(l => l.name === quiz.line_name)?.id || 2;
+                const answerRes = recordAnswerEvent({
+                    lineId,
+                    responseTimeMs: (30 - timeLeft) * 1000
+                });
+                handleAchievementUnlocks(answerRes.newlyUnlocked);
             } else {
                 playWrongSound();
                 showToast('error', `❌ '${cleanInput}'역은 오답입니다!`);
@@ -1171,12 +1235,21 @@ export default function App() {
                 onJoinByCode={handleJoinByInviteCode}
             />
 
+            <AchievementModal 
+                isOpen={isAchievementModalOpen}
+                onClose={() => setIsAchievementModalOpen(false)}
+                onTitleChange={(t) => setEquippedTitle(t)}
+            />
+
             {gameMode === 'MENU' && (
                 <MainMenuPage 
                     onFetchLeaderboard={() => fetchLeaderboard(null)}
                     selectedLineIds={selectedLineIds}
                     onOpenLineSelectorWithMode={handleOpenLineSelectorWithMode}
                     onStartPractice={startPracticeMode}
+                    onOpenAchievements={() => setIsAchievementModalOpen(true)}
+                    equippedTitle={equippedTitle}
+                    unlockedAchievementCount={unlockedAchievementCount}
                 />
             )}
 

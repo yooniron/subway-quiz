@@ -5,6 +5,8 @@ import { CorrectOverlay } from '../components/common/CorrectOverlay';
 import type { Quiz } from '../types/index';
 import { ArrowLeft, HelpCircle, AlertCircle, Flame, Infinity as InfinityIcon, Hash } from 'lucide-react';
 import { playCorrectSound, playWrongSound, playComboSound } from '../lib/sound';
+import { recordPracticeAnswer } from '../utils/achievements';
+import { SUBWAY_LINES } from '../components/common/LineSelectorModal';
 
 interface PracticeMapGamePageProps {
     quiz: Quiz | null;
@@ -58,45 +60,44 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
     // 퀴즈가 변경될 때마다 전광판 노출 역명을 100% 소거한 4지선다 보기 무작위 생성
     useEffect(() => {
         if (!quiz) return;
+        setQuizCount(prev => prev + 1);
 
+        const currentLine = quiz.line_name;
         const targetClean = quiz.target_station_name.replace(/역$/, '').trim();
 
-        // 🚫 퀴즈 전광판에 한글로 뜬 모든 역명 집합 (소거 대상)
-        const excludedNames = new Set<string>();
-        [quiz.target_station_name, quiz.left_2, quiz.left_1, quiz.right_1, quiz.right_2].forEach(name => {
-            if (name) {
-                excludedNames.add(name.replace(/역$/, '').trim());
-            }
-        });
+        // 1. 해당 호선에서 정답을 제외한 후보군 추출
+        const linePool = (LINE_DISTRACTORS[currentLine] || ALL_DISTRACTORS_FLAT)
+            .filter(st => st.replace(/역$/, '').trim() !== targetClean);
 
-        // 미리 정의된 Flat 배열 활용
-        const linePool = LINE_DISTRACTORS[quiz.line_name] || LINE_DISTRACTORS['2호선'];
-        const combinedPool = Array.from(new Set([...linePool, ...ALL_DISTRACTORS_FLAT]));
+        // 2. 해당 호선 후보가 3개 미만이면 전체 풀에서 보충
+        let chosenDistractors: string[] = [];
+        if (linePool.length >= 3) {
+            chosenDistractors = shuffleArray(linePool).slice(0, 3);
+        } else {
+            const fallbackPool = ALL_DISTRACTORS_FLAT.filter(st => 
+                st.replace(/역$/, '').trim() !== targetClean && !linePool.includes(st)
+            );
+            chosenDistractors = [...linePool, ...shuffleArray(fallbackPool).slice(0, 3 - linePool.length)];
+        }
 
-        // 전광판 노출 역 제외 + 피셔-예이츠 셔플 사용
-        const validDistractors = combinedPool.filter(st => !excludedNames.has(st));
-        const shuffledDistractors = shuffleArray(validDistractors);
-
-        // 정답 역 1개 + 3개 무작위 보기를 고속 셔플
-        const final4 = shuffleArray([targetClean, ...shuffledDistractors.slice(0, 3)]);
-        
-        setOptions(final4);
+        // 3. 정답과 오답 3개를 섞어 최종 4지선다 생성
+        const finalChoices = shuffleArray([targetClean, ...chosenDistractors]);
+        setOptions(finalChoices);
         setSelectedOption(null);
-        setQuizCount(prev => prev + 1);
-        isTransitioningRef.current = false;
         setIsTransitioning(false);
+        isTransitioningRef.current = false;
     }, [quiz]);
 
     if (!quiz) {
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 text-white px-4">
-                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="text-sm font-bold text-gray-300 animate-pulse">🚆 4지선다 스피드 퀴즈 준비 중...</p>
-                <button 
+            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 text-white font-sans">
+                <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="text-gray-400 font-bold">다음 문제를 준비하고 있습니다...</p>
+                <button
                     onClick={onExit}
-                    className="mt-6 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white text-xs font-bold rounded-xl transition-all"
+                    className="mt-6 px-6 py-2.5 bg-gray-900 border border-gray-800 rounded-xl text-gray-300 hover:text-white font-bold"
                 >
-                    메인 메뉴로 돌아가기
+                    메인 메뉴로 이동
                 </button>
             </div>
         );
@@ -128,6 +129,10 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
             if (nextCombo >= 2) {
                 playComboSound(nextCombo);
             }
+
+            // 🏆 업적 기록 (연습 모드 정답)
+            const lineId = SUBWAY_LINES.find(l => l.name === quiz.line_name)?.id || 2;
+            recordPracticeAnswer(lineId);
 
             setShowHint(false);
             

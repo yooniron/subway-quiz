@@ -5,6 +5,7 @@ import type { Quiz, RankingEntry, Toast, GameMode, PlayerRole, RoomStatus, Lobby
 import { ToastContainer } from './components/common/ToastContainer';
 import { LeaderboardModal } from './components/leaderboard/LeaderboardModal';
 import { AchievementModal } from './components/achievement/AchievementModal';
+import { AuthModal } from './components/auth/AuthModal';
 import { MainMenuPage } from './pages/MainMenuPage';
 import { SingleGamePage } from './pages/SingleGamePage';
 import { MultiplayerGamePage } from './pages/MultiplayerGamePage';
@@ -25,8 +26,18 @@ import {
     recordMultiplayerResult, 
     getEquippedTitle 
 } from './utils/achievements';
+import { 
+    getAuthSession, 
+    logoutUser, 
+    syncCloudProfile 
+} from './utils/auth';
+import type { AuthUser, UserSession } from './types/auth';
 
 export default function App() {
+    // 사용자 인증 및 세션 상태
+    const [authSession, setAuthSession] = useState<UserSession | null>(() => getAuthSession());
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
     // 업적 및 칭호 상태 변수
     const [isAchievementModalOpen, setIsAchievementModalOpen] = useState(false);
     const [equippedTitle, setEquippedTitle] = useState<string | null>(() => getEquippedTitle());
@@ -36,7 +47,10 @@ export default function App() {
     });
 
     // 유저 식별자
-    const [myId] = useState<string>(() => {
+    const [myId, setMyId] = useState<string>(() => {
+        const session = getAuthSession();
+        if (session) return session.user.id;
+
         const saved = localStorage.getItem('subway_user_id');
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (saved && uuidRegex.test(saved)) return saved;
@@ -136,7 +150,7 @@ export default function App() {
         setTimeout(() => setShowCorrectOverlay(false), 500);
     };
 
-    // 업적 달성 시 토스트 알림 및 축하 사운드 핸들러
+    // 업적 달성 시 토스트 알림, 축하 사운드 및 클라우드 자동 동기화 핸들러
     const handleAchievementUnlocks = (newlyUnlocked: { title: string; rewardTitle: string; tier: string }[]) => {
         if (newlyUnlocked && newlyUnlocked.length > 0) {
             setUnlockedAchievementCount(prev => prev + newlyUnlocked.length);
@@ -144,7 +158,27 @@ export default function App() {
                 showToast('score', `🎉 업적 달성! [${ach.title}] - 칭호 획득: [${ach.rewardTitle}]! 👑`);
             });
             playVictorySound();
+            syncCloudProfile().catch(() => {});
         }
+    };
+
+    // 로그인 / 회원가입 성공 처리 핸들러
+    const handleAuthSuccess = (user: AuthUser) => {
+        const session = getAuthSession();
+        setAuthSession(session);
+        setMyId(user.id);
+        setNicknameInput(user.nickname);
+        setEquippedTitle(user.equippedTitle);
+        const data = loadAchievementData();
+        setUnlockedAchievementCount(data.unlockedIds.length);
+        showToast('success', `🎉 '${user.nickname}' 계정으로 로그인되었습니다!`);
+    };
+
+    // 로그아웃 처리 핸들러
+    const handleLogout = () => {
+        logoutUser();
+        setAuthSession(null);
+        showToast('info', "로그아웃되어 게스트 모드로 전환되었습니다.");
     };
     
     // 호선 선택 상태 관리 (기본값: 전체 1~9호선 선택)
@@ -1235,10 +1269,19 @@ export default function App() {
                 onJoinByCode={handleJoinByInviteCode}
             />
 
+            <AuthModal 
+                isOpen={isAuthModalOpen}
+                onClose={() => setIsAuthModalOpen(false)}
+                onSuccess={handleAuthSuccess}
+            />
+
             <AchievementModal 
                 isOpen={isAchievementModalOpen}
                 onClose={() => setIsAchievementModalOpen(false)}
-                onTitleChange={(t) => setEquippedTitle(t)}
+                onTitleChange={(t) => {
+                    setEquippedTitle(t);
+                    syncCloudProfile().catch(() => {});
+                }}
             />
 
             {gameMode === 'MENU' && (
@@ -1250,6 +1293,10 @@ export default function App() {
                     onOpenAchievements={() => setIsAchievementModalOpen(true)}
                     equippedTitle={equippedTitle}
                     unlockedAchievementCount={unlockedAchievementCount}
+                    onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                    onLogout={handleLogout}
+                    isLoggedIn={Boolean(authSession)}
+                    currentUserNickname={authSession?.user.nickname || nicknameInput || '게스트'}
                 />
             )}
 

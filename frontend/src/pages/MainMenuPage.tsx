@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Zap, Trophy, Layers, Settings2, Compass, Award, Sparkles } from 'lucide-react';
+import { Users, Zap, Trophy, Layers, Settings2, Compass, Award, Sparkles, User, LogIn, LogOut, Cloud } from 'lucide-react';
 import { Header } from '../components/common/Header';
 import { SUBWAY_LINES } from '../components/common/LineSelectorModal';
 
@@ -11,6 +11,10 @@ interface MainMenuPageProps {
     onOpenAchievements?: () => void;
     equippedTitle?: string | null;
     unlockedAchievementCount?: number;
+    onOpenAuthModal?: () => void;
+    onLogout?: () => void;
+    isLoggedIn?: boolean;
+    currentUserNickname?: string;
 }
 
 export const MainMenuPage: React.FC<MainMenuPageProps> = ({
@@ -20,7 +24,11 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
     onStartPractice: _onStartPractice,
     onOpenAchievements,
     equippedTitle,
-    unlockedAchievementCount = 0
+    unlockedAchievementCount = 0,
+    onOpenAuthModal,
+    onLogout,
+    isLoggedIn = false,
+    currentUserNickname = '게스트'
 }) => {
     const isAllSelected = selectedLineIds.length === SUBWAY_LINES.length;
 
@@ -33,26 +41,64 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
             <div className="flex flex-col items-center max-w-md w-full text-center z-10 animate-card-pop">
                 <Header />
 
-                {/* 내 프로필 & 장착 칭호 배지 카드 */}
-                {equippedTitle && (
-                    <div className="w-full bg-gradient-to-r from-yellow-500/15 via-amber-500/15 to-emerald-500/15 border border-yellow-400/30 rounded-2xl px-4 py-2.5 shadow-lg backdrop-blur-md mb-3 flex items-center justify-between animate-fade-in">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                            <Sparkles className="w-4 h-4 text-yellow-400 shrink-0 animate-spin-slow" />
-                            <span className="text-[11px] text-gray-300 font-bold shrink-0">내 칭호:</span>
-                            <span className="text-xs font-black text-yellow-300 truncate tracking-wide">
-                                [{equippedTitle}]
-                            </span>
+                {/* 내 프로필 & 계정 상태 배너 카드 */}
+                <div className="w-full bg-gray-900/90 border border-gray-800/90 rounded-2xl px-4 py-3 shadow-lg backdrop-blur-md mb-3 flex items-center justify-between animate-fade-in">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                            isLoggedIn 
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                                : 'bg-gray-800 text-gray-400 border border-gray-700'
+                        }`}>
+                            {isLoggedIn ? <Cloud className="w-4 h-4" /> : <User className="w-4 h-4" />}
                         </div>
-                        {onOpenAchievements && (
+                        <div className="text-left min-w-0">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-black text-white truncate">
+                                    {currentUserNickname}
+                                </span>
+                                {isLoggedIn ? (
+                                    <span className="px-1.5 py-0.2 text-[9px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-full shrink-0">
+                                        클라우드 연동됨
+                                    </span>
+                                ) : (
+                                    <span className="px-1.5 py-0.2 text-[9px] font-bold bg-gray-800 text-gray-400 rounded-full shrink-0">
+                                        게스트
+                                    </span>
+                                )}
+                            </div>
+                            {equippedTitle ? (
+                                <p className="text-[11px] font-bold text-yellow-400 truncate mt-0.5">
+                                    ✨ [{equippedTitle}]
+                                </p>
+                            ) : (
+                                <p className="text-[10px] text-gray-500 font-medium truncate mt-0.5">
+                                    장착된 칭호 없음
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                        {isLoggedIn ? (
                             <button
-                                onClick={onOpenAchievements}
-                                className="text-[10px] font-bold text-yellow-400 hover:text-yellow-300 underline underline-offset-2 shrink-0 cursor-pointer"
+                                onClick={onLogout}
+                                className="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-red-400 text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                                title="로그아웃"
                             >
-                                변경
+                                <LogOut className="w-3.5 h-3.5" />
+                                <span>로그아웃</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={onOpenAuthModal}
+                                className="px-3 py-1.5 bg-yellow-400/20 hover:bg-yellow-400/30 border border-yellow-400/40 text-yellow-300 text-xs font-black rounded-xl transition-all flex items-center gap-1 shadow-sm cursor-pointer"
+                            >
+                                <LogIn className="w-3.5 h-3.5" />
+                                <span>계정 연동</span>
                             </button>
                         )}
                     </div>
-                )}
+                </div>
 
                 {/* 호선 선택 현황 카드 */}
                 <div className="w-full bg-gray-900/90 border border-gray-800 rounded-3xl p-5 shadow-2xl backdrop-blur-md mb-4 text-left">

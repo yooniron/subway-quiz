@@ -148,9 +148,9 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                                         <div className="flex flex-wrap gap-1 mb-4">
                                             {isAllLines ? (
                                                 <span className="px-2 py-0.5 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-[10px] font-bold rounded-md">
-                                                    🌟 1~9호선 전체
+                                                    🌟 전국 28개 전체
                                                 </span>
-                                            ) : (
+                                            ) : lineIds.length <= 4 ? (
                                                 lineIds.map((id) => {
                                                     const lineInfo = SUBWAY_LINES.find((l) => l.id === id);
                                                     return (
@@ -163,6 +163,24 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                                                         </span>
                                                     );
                                                 })
+                                            ) : (
+                                                <>
+                                                    {lineIds.slice(0, 3).map((id) => {
+                                                        const lineInfo = SUBWAY_LINES.find((l) => l.id === id);
+                                                        return (
+                                                            <span
+                                                                key={id}
+                                                                className="px-2 py-0.5 text-[10px] font-bold text-white rounded-md shadow-xs"
+                                                                style={{ backgroundColor: lineInfo?.color || '#555' }}
+                                                            >
+                                                                {lineInfo?.name || `${id}호선`}
+                                                            </span>
+                                                        );
+                                                    })}
+                                                    <span className="px-2 py-0.5 text-[10px] font-bold text-amber-400 bg-gray-800 border border-amber-400/30 rounded-md">
+                                                        +{lineIds.length - 3}개
+                                                    </span>
+                                                </>
                                             )}
                                         </div>
 

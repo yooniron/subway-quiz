@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
     ACHIEVEMENTS_CONFIG,
     loadAchievementData,
-    saveAchievementData,
     recordAnswerEvent,
     recordSingleScoreEvent,
     recordHintUsed,
@@ -56,8 +55,8 @@ describe('Achievements and Titles System Tests', () => {
         for (let i = 0; i < 9; i++) {
             recordPracticeAnswer(2);
         }
-        let progress = getAchievementProgressList();
-        let ach = progress.find(p => p.id === 'practice_10');
+        const progress = getAchievementProgressList();
+        const ach = progress.find(p => p.id === 'practice_10');
         expect(ach?.isUnlocked).toBe(false);
         expect(ach?.currentProgress).toBe(9);
 

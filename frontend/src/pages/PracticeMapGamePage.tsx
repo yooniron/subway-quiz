@@ -14,16 +14,7 @@ interface PracticeMapGamePageProps {
     onExit: () => void;
 }
 
-const LINE_DISTRACTORS: Record<string, string[]> = {
-    '1호선': ['청량리', '종로5가', '시청', '서울역', '용산', '노량진', '영등포', '구로', '부평', '인천', '수원', '의정부'],
-    '2호선': ['을지로입구', '을지로3가', '충정로', '성수', '건대입구', '잠실', '삼성', '선릉', '역삼', '강남', '교대', '서초', '사당', '낙성대', '서울대입구', '신림', '신도림', '대림', '영등포구청', '당산', '합정', '홍대입구', '신촌', '이대', '아현'],
-    '3호선': ['대화', '연신내', '독립문', '경복궁', '안국', '충무로', '약수', '옥수', '압구정', '고속터미널', '양재', '수서', '가락시장', '오금'],
-    '4호선': ['불암산', '노원', '창동', '혜화', '동대문', '충무로', '명동', '회현', '서울역', '삼각지', '이촌', '동작', '사당', '인덕원', '오이도'],
-    '9호선': ['개화', '김포공항', '가양', '염창', '당산', '국회의사당', '여의도', '샛강', '노량진', '동작', '신논현', '선정릉', '봉은사', '종합운동장', '석촌', '올림픽공원', '중앙보훈병원']
-};
-
-// ⚡ 모바일 메모리 최적화: 매번 계산하지 않도록 미리 취합해 두기
-const ALL_DISTRACTORS_FLAT = Object.values(LINE_DISTRACTORS).flat();
+import { LINE_STATION_SEQUENCES } from '../data/nationalSubwayData';
 
 // ⚡ 모바일 CPU 부하 0%에 가까운 고성능 피셔-예이츠 셔플 함수
 function shuffleArray<T>(array: T[]): T[] {
@@ -34,6 +25,9 @@ function shuffleArray<T>(array: T[]): T[] {
     }
     return result;
 }
+
+// 전체 역 이름 평탄화 목록 (폴백용)
+const ALL_STATIONS_FLAT = Array.from(new Set(Object.values(LINE_STATION_SEQUENCES).flat()));
 
 export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
     quiz,
@@ -62,22 +56,32 @@ export const PracticeMapGamePage: React.FC<PracticeMapGamePageProps> = ({
         if (!quiz) return;
         setQuizCount(prev => prev + 1);
 
-        const currentLine = quiz.line_name;
+        const currentLineInfo = SUBWAY_LINES.find(l => l.name === quiz.line_name);
+        const lineId = currentLineInfo?.id || 2;
         const targetClean = quiz.target_station_name.replace(/역$/, '').trim();
 
-        // 1. 해당 호선에서 정답을 제외한 후보군 추출
-        const linePool = (LINE_DISTRACTORS[currentLine] || ALL_DISTRACTORS_FLAT)
-            .filter(st => st.replace(/역$/, '').trim() !== targetClean);
+        // 1. 해당 호선에서 정답 및 좌우 힌트에 노출된 역명을 제외한 후보군 추출
+        const exposedStations = [
+            targetClean,
+            quiz.left_2?.replace(/역$/, '').trim(),
+            quiz.left_1?.replace(/역$/, '').trim(),
+            quiz.right_1?.replace(/역$/, '').trim(),
+            quiz.right_2?.replace(/역$/, '').trim()
+        ].filter(Boolean) as string[];
 
-        // 2. 해당 호선 후보가 3개 미만이면 전체 풀에서 보충
+        const lineStations = (LINE_STATION_SEQUENCES[lineId] || [])
+            .map(st => st.replace(/역$/, '').trim())
+            .filter(st => !exposedStations.includes(st));
+
+        // 2. 해당 호선 후보가 3개 미만이면 전체 역 풀에서 보충
         let chosenDistractors: string[] = [];
-        if (linePool.length >= 3) {
-            chosenDistractors = shuffleArray(linePool).slice(0, 3);
+        if (lineStations.length >= 3) {
+            chosenDistractors = shuffleArray(lineStations).slice(0, 3);
         } else {
-            const fallbackPool = ALL_DISTRACTORS_FLAT.filter(st => 
-                st.replace(/역$/, '').trim() !== targetClean && !linePool.includes(st)
-            );
-            chosenDistractors = [...linePool, ...shuffleArray(fallbackPool).slice(0, 3 - linePool.length)];
+            const fallbackPool = ALL_STATIONS_FLAT
+                .map(st => st.replace(/역$/, '').trim())
+                .filter(st => !exposedStations.includes(st) && !lineStations.includes(st));
+            chosenDistractors = [...lineStations, ...shuffleArray(fallbackPool).slice(0, 3 - lineStations.length)];
         }
 
         // 3. 정답과 오답 3개를 섞어 최종 4지선다 생성

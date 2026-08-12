@@ -178,9 +178,9 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
                     <div className="flex flex-wrap gap-1 justify-end max-w-[60%]">
                         {isAllLines ? (
                             <span className="px-2.5 py-0.5 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-xs font-black rounded-lg">
-                                🌟 1~9호선 전체 출제
+                                🌟 전국 28개 전 노선 출제
                             </span>
-                        ) : (
+                        ) : lineIds.length <= 4 ? (
                             lineIds.map((id) => {
                                 const lineInfo = SUBWAY_LINES.find((l) => l.id === id);
                                 return (
@@ -193,6 +193,24 @@ export const RoomWaitingModal: React.FC<RoomWaitingModalProps> = ({
                                     </span>
                                 );
                             })
+                        ) : (
+                            <>
+                                {lineIds.slice(0, 3).map((id) => {
+                                    const lineInfo = SUBWAY_LINES.find((l) => l.id === id);
+                                    return (
+                                        <span
+                                            key={id}
+                                            className="px-2 py-0.5 text-xs font-bold text-white rounded-md shadow-xs"
+                                            style={{ backgroundColor: lineInfo?.color || '#555' }}
+                                        >
+                                            {lineInfo?.name || `${id}호선`}
+                                        </span>
+                                    );
+                                })}
+                                <span className="px-2 py-0.5 text-xs font-black text-amber-400 bg-gray-800 border border-amber-400/30 rounded-md shadow-xs">
+                                    +{lineIds.length - 3}개
+                                </span>
+                            </>
                         )}
                     </div>
                 </div>

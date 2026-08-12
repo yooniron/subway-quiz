@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Zap, Trophy, Layers, Settings2, Compass, Award, Sparkles, User, LogIn, LogOut, Cloud } from 'lucide-react';
+import { Users, Zap, Trophy, Layers, Settings2, Compass, Award, User, LogIn, LogOut, Cloud } from 'lucide-react';
 import { Header } from '../components/common/Header';
 import { SUBWAY_LINES } from '../components/common/LineSelectorModal';
 
@@ -120,9 +120,9 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
                     <div className="flex flex-wrap gap-1.5 items-center">
                         {isAllSelected ? (
                             <span className="px-3 py-1 bg-yellow-400 text-gray-950 font-black text-xs rounded-full shadow-sm">
-                                🌟 전체 호선 활성화 (1~9호선 무작위)
+                                🌟 전국 28개 전 노선 활성화 (수도권·부산·대구·대전·광주·GTX)
                             </span>
-                        ) : (
+                        ) : selectedLineIds.length <= 6 ? (
                             SUBWAY_LINES.filter(line => selectedLineIds.includes(line.id)).map(line => (
                                 <span 
                                     key={line.id}
@@ -132,6 +132,21 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
                                     {line.name}
                                 </span>
                             ))
+                        ) : (
+                            <>
+                                {SUBWAY_LINES.filter(line => selectedLineIds.includes(line.id)).slice(0, 5).map(line => (
+                                    <span 
+                                        key={line.id}
+                                        className="px-2.5 py-0.5 rounded-full text-[11px] font-bold text-white shadow-sm"
+                                        style={{ backgroundColor: line.color }}
+                                    >
+                                        {line.name}
+                                    </span>
+                                ))}
+                                <span className="px-2.5 py-0.5 bg-gray-800 text-yellow-400 border border-yellow-400/30 rounded-full text-[11px] font-black shadow-sm">
+                                    +{selectedLineIds.length - 5}개 노선 (총 {selectedLineIds.length}개)
+                                </span>
+                            </>
                         )}
                     </div>
                 </div>

@@ -108,7 +108,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 : 'text-gray-400 hover:text-white'
                         }`}
                     >
-                        3초 회원가입
+                        회원가입
                     </button>
                 </div>
 
@@ -187,7 +187,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             <div className="w-5 h-5 border-2 border-gray-950 border-t-transparent rounded-full animate-spin" />
                         ) : (
                             <>
-                                <span>{mode === 'LOGIN' ? '로그인 및 데이터 동기화' : '3초 회원가입 완료'}</span>
+                                <span>{mode === 'LOGIN' ? '로그인 및 데이터 동기화' : '회원가입 완료'}</span>
                                 <ArrowRight className="w-4 h-4" />
                             </>
                         )}

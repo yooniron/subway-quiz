@@ -1,0 +1,91 @@
+name: "Auto Labeler"
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label-by-path:
+    name: "Label by Changed Files (Area)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply Area Labels based on File Paths
+        uses: actions/labeler@v5
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: ".github/labeler.yml"
+          sync-labels: false
+
+  label-by-title:
+    name: "Label by PR Title & Prefix (Type)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply Type Labels from Title & Branch Prefix
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const title = (pr.title || '').trim().toLowerCase();
+            const branch = (pr.head.ref || '').toLowerCase();
+
+            const typeLabelMap = [
+              { pattern: /^(✨\s*)?feat(\(.*\))?:/, label: '✨ feat' },
+              { pattern: /^(🐛\s*)?fix(\(.*\))?:/, label: '🐛 fix' },
+              { pattern: /^(♻️\s*)?refactor(\(.*\))?:/, label: '♻️ refactor' },
+              { pattern: /^(💄\s*)?style(\(.*\))?:/, label: '💄 style' },
+              { pattern: /^(📝\s*)?docs(\(.*\))?:/, label: '📝 docs' },
+              { pattern: /^(🧪\s*)?test(\(.*\))?:/, label: '🧪 test' },
+              { pattern: /^(⚙️\s*)?chore(\(.*\))?:/, label: '⚙️ chore' },
+              { pattern: /^(🚀\s*)?perf(\(.*\))?:/, label: '🚀 perf' }
+            ];
+
+            const branchPrefixMap = [
+              { prefix: 'feat/', label: '✨ feat' },
+              { prefix: 'feature/', label: '✨ feat' },
+              { prefix: 'fix/', label: '🐛 fix' },
+              { prefix: 'bugfix/', label: '🐛 fix' },
+              { prefix: 'refactor/', label: '♻️ refactor' },
+              { prefix: 'style/', label: '💄 style' },
+              { prefix: 'docs/', label: '📝 docs' },
+              { prefix: 'test/', label: '🧪 test' },
+              { prefix: 'chore/', label: '⚙️ chore' },
+              { prefix: 'perf/', label: '🚀 perf' }
+            ];
+
+            const labelsToAdd = new Set();
+
+            // 1. PR 제목 접두어 검사
+            for (const item of typeLabelMap) {
+              if (item.pattern.test(title)) {
+                labelsToAdd.add(item.label);
+              }
+            }
+
+            // 2. 브랜치명 접두어 검사 (제목에서 안 잡혔을 때 보완)
+            if (labelsToAdd.size === 0) {
+              for (const item of branchPrefixMap) {
+                if (branch.startsWith(item.prefix)) {
+                  labelsToAdd.add(item.label);
+                  break;
+                }
+              }
+            }
+
+            // 3. 라벨 추가 적용
+            if (labelsToAdd.size > 0) {
+              const labelsArray = Array.from(labelsToAdd);
+              console.log(`Adding labels to PR #${pr.number}:`, labelsArray);
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: labelsArray
+              });
+            } else {
+              console.log('No matching type prefix detected for PR #' + pr.number);
+            }

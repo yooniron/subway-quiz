@@ -3,8 +3,16 @@ name: Auto Create Pull Request
 on:
   push:
     branches:
-      - 'feature/*'
+      - 'feat/**'
       - 'feature/**'
+      - 'fix/**'
+      - 'bugfix/**'
+      - 'refactor/**'
+      - 'style/**'
+      - 'docs/**'
+      - 'test/**'
+      - 'chore/**'
+      - 'perf/**'
 
 permissions:
   pull-requests: write

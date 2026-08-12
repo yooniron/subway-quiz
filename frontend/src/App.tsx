@@ -16,7 +16,7 @@ import { RoomWaitingModal } from './components/common/RoomWaitingModal';
 import { PasswordModal } from './components/common/PasswordModal';
 import { InviteCodeModal } from './components/common/InviteCodeModal';
 import { LineSelectorModal, SUBWAY_LINES } from './components/common/LineSelectorModal';
-import { generateQuizFromSequences } from './data/nationalSubwayData';
+import { generateQuizFromSequences, LINE_STATION_SEQUENCES } from './data/nationalSubwayData';
 import { playCorrectSound, playWrongSound, playComboSound, playVictorySound } from './lib/sound';
 import { 
     loadAchievementData, 
@@ -104,6 +104,7 @@ export default function App() {
 
     // 퀴즈 중복 출제 방지 및 노선 완파 감지용 상태
     const [answeredStationIds, setAnsweredStationIds] = useState<number[]>([]);
+    const [answeredStationNames, setAnsweredStationNames] = useState<string[]>([]);
     const [totalStationCount, setTotalStationCount] = useState<number>(0);
     const [allClearedFlag, setAllClearedFlag] = useState(false);
 
@@ -613,7 +614,7 @@ export default function App() {
         try {
             const activeLineIds = customLineIds && customLineIds.length > 0 
                 ? customLineIds 
-                : (selectedLineIds && selectedLineIds.length > 0 ? selectedLineIds : [1, 2, 3, 4, 9]);
+                : (selectedLineIds && selectedLineIds.length > 0 ? selectedLineIds : SUBWAY_LINES.map(l => l.id));
 
             const rpcPromise = supabase.rpc('get_single_quiz', {
                 p_selected_line_ids: activeLineIds,
@@ -643,13 +644,18 @@ export default function App() {
         } catch (_e) {
             const activeLineIds = customLineIds && customLineIds.length > 0 
                 ? customLineIds 
-                : (selectedLineIds && selectedLineIds.length > 0 ? selectedLineIds : [1, 2, 3, 4, 9]);
+                : (selectedLineIds && selectedLineIds.length > 0 ? selectedLineIds : SUBWAY_LINES.map(l => l.id));
             const dynamicQuiz = generateQuizFromSequences(activeLineIds);
             setSingleQuiz(dynamicQuiz as any);
         }
     };
 
     const startSingleModeWithLines = async (lines: number[]) => {
+        if (!lines || lines.length === 0) {
+            showToast('error', "최소 1개 이상의 호선을 선택해주세요.");
+            return;
+        }
+        setSelectedLineIds(lines);
         setGameMode('SINGLE');
         setSingleScore(0);
         setSingleTimeLeft(60);
@@ -660,36 +666,50 @@ export default function App() {
         setIsRankSubmitted(false);
         setUserInput('');
         setAnsweredStationIds([]);
+        setAnsweredStationNames([]);
         setAllClearedFlag(false);
 
         // 선택된 호선의 총 고유 역 수 조회 (완파 감지용)
+        let totalCount = 0;
         try {
             const { data: stationData } = await supabase
                 .from('station_connections')
                 .select('from_station_id')
                 .in('line_id', lines);
-            if (stationData) {
+            if (stationData && stationData.length > 0) {
                 const uniqueStations = new Set(stationData.map((s: any) => s.from_station_id));
-                setTotalStationCount(uniqueStations.size);
+                totalCount = uniqueStations.size;
             }
         } catch { /* fallback: 0 */ }
 
-        loadSingleQuiz(lines, []);
+        // DB에 데이터가 부족하거나 없을 경우 로컬 시퀀스 기준으로 총 역 수 산출
+        if (totalCount === 0) {
+            const allLocalStations = new Set<string>();
+            lines.forEach((lId) => {
+                const seq = LINE_STATION_SEQUENCES[lId];
+                if (seq) seq.forEach((st) => allLocalStations.add(st));
+            });
+            totalCount = allLocalStations.size;
+        }
+        setTotalStationCount(totalCount);
+
+        loadSingleQuiz(lines, [], []);
     };
 
-    const loadSingleQuiz = async (lines: number[] = selectedLineIds, excludeIds?: number[]) => {
+    const loadSingleQuiz = async (
+        lines: number[] = selectedLineIds,
+        excludeIds?: number[],
+        excludeNames?: string[]
+    ) => {
         const currentExcludeIds = excludeIds !== undefined ? excludeIds : answeredStationIds;
+        const currentExcludeNames = excludeNames !== undefined ? excludeNames : answeredStationNames;
+
         try {
             const { data, error } = await supabase.rpc('get_single_quiz', {
                 p_selected_line_ids: lines,
                 p_exclude_station_ids: currentExcludeIds.length > 0 ? currentExcludeIds : null
             });
-            if (error) {
-                showToast('error', "퀴즈 출제 오류가 발생하여 메인으로 복귀합니다.");
-                setGameMode('MENU');
-                return;
-            }
-            if (data && data.length > 0) {
+            if (!error && data && data.length > 0) {
                 setSingleQuiz({
                     target_station_id: data[0].target_station_id,
                     target_station_name: data[0].target_station_name,
@@ -703,12 +723,34 @@ export default function App() {
                 setIsHintActive(false);
                 setUserInput('');
                 focusInput();
-            } else {
-                // 🏆 모든 역 정답 완파! 특별 달성 알림
-                handleAllStationsCleared();
+                return;
             }
         } catch (_e: any) {
-            showToast('error', "퀴즈 로딩 예외가 발생했습니다.");
+            // DB RPC 실패 시 아래 로컬 제너레이터로 안전 전환
+        }
+
+        // DB에 해당 노선 역이 없거나 RPC 실패 시 로컬 28개 노선 시퀀스에서 실시간 생성
+        try {
+            const dynamicQuiz = generateQuizFromSequences(lines, currentExcludeNames);
+            if (dynamicQuiz && dynamicQuiz.target_station_name) {
+                setSingleQuiz({
+                    target_station_id: dynamicQuiz.target_station_id,
+                    target_station_name: dynamicQuiz.target_station_name,
+                    line_name: dynamicQuiz.line_name,
+                    color_code: dynamicQuiz.color_code,
+                    left_2: dynamicQuiz.left_2,
+                    left_1: dynamicQuiz.left_1,
+                    right_1: dynamicQuiz.right_1,
+                    right_2: dynamicQuiz.right_2
+                });
+                setIsHintActive(false);
+                setUserInput('');
+                focusInput();
+            } else {
+                handleAllStationsCleared();
+            }
+        } catch (_err) {
+            showToast('error', "퀴즈를 로딩할 수 없습니다.");
             setGameMode('MENU');
         }
     };
@@ -746,13 +788,34 @@ export default function App() {
         return () => clearInterval(interval);
     }, [gameMode, isSingleOver, singleTimeLeft]);
 
-    // 싱글 모드 게임 종료 시 스코어 업적 갱신
+    // 메인 메뉴로 이탈 시 진행 중인 게임 세션 및 상태 완전 폐기/초기화
+    const handleExitToMenu = () => {
+        setSingleScore(0);
+        setSingleTimeLeft(60);
+        setIsSingleOver(false);
+        setComboCount(0);
+        setHintCount(3);
+        setIsHintActive(false);
+        setUserInput('');
+        setAnsweredStationIds([]);
+        setAnsweredStationNames([]);
+        setSingleQuiz(null);
+        setAllClearedFlag(false);
+        setShowCorrectOverlay(false);
+        setIsRankSubmitted(false);
+        isSingleTransitioningRef.current = false;
+
+        handleExitRoom();
+        setGameMode('MENU');
+    };
+
+    // 싱글 모드 게임 종료 시 스코어 업적 갱신 (오직 SINGLE 모드 활성 상태에서 종료 시에만 실행)
     useEffect(() => {
-        if (isSingleOver && singleScore > 0) {
+        if (gameMode === 'SINGLE' && isSingleOver && singleScore > 0) {
             const scoreRes = recordSingleScoreEvent(singleScore, allClearedFlag);
             handleAchievementUnlocks(scoreRes.newlyUnlocked);
         }
-    }, [isSingleOver, singleScore, allClearedFlag]);
+    }, [gameMode, isSingleOver, singleScore, allClearedFlag]);
 
     const useSingleHint = () => {
         if (hintCount <= 0) {
@@ -805,9 +868,11 @@ export default function App() {
             });
             handleAchievementUnlocks(answerRes.newlyUnlocked);
 
-            // 정답 역 ID를 이력에 추가 (중복 출제 방지)
+            // 정답 역 ID 및 역명 이력 추가 (중복 출제 방지)
             const newAnswered = [...answeredStationIds, singleQuiz.target_station_id];
+            const newAnsweredNames = [...answeredStationNames, cleanTarget];
             setAnsweredStationIds(newAnswered);
+            setAnsweredStationNames(newAnsweredNames);
 
             let addedPoints = 100;
             let timeBonus = 0;
@@ -838,7 +903,7 @@ export default function App() {
             }
 
             setTimeout(() => {
-                loadSingleQuiz(selectedLineIds, newAnswered);
+                loadSingleQuiz(selectedLineIds, newAnswered, newAnsweredNames);
                 focusInput();
                 isSingleTransitioningRef.current = false;
             }, 500);
@@ -1284,7 +1349,7 @@ export default function App() {
                 <PracticeMapGamePage 
                     quiz={singleQuiz}
                     onNextQuiz={loadNextPracticeQuiz}
-                    onExit={handleExitRoom}
+                    onExit={handleExitToMenu}
                 />
             )}
 
@@ -1298,7 +1363,7 @@ export default function App() {
                     onOpenInviteCodeModal={() => setIsInviteCodeModalOpen(true)}
                     onJoinRoom={handleJoinRoomById}
                     onJoinPrivateRoom={handleJoinPrivateRoom}
-                    onBackToMenu={() => setGameMode('MENU')}
+                    onBackToMenu={handleExitToMenu}
                 />
             )}
 
@@ -1327,7 +1392,7 @@ export default function App() {
                     onInputChange={(e) => setUserInput(e.target.value)}
                     onAnswerSubmit={handleSingleAnswerSubmit}
                     onUseHint={useSingleHint}
-                    onExit={handleExitRoom}
+                    onExit={handleExitToMenu}
                     onRestart={() => startSingleModeWithLines(selectedLineIds)}
                     onNicknameChange={(e) => setNicknameInput(e.target.value)}
                     onSubmitRanking={submitSingleRanking}

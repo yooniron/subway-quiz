@@ -562,15 +562,10 @@ export function recordHintUsed(): { newlyUnlocked: Achievement[] } {
     return evaluateAndUnlock(data);
 }
 
-// 4. 연습 모드 정답 이벤트 발생 시 호출
-export function recordPracticeAnswer(lineId?: number): { newlyUnlocked: Achievement[] } {
+// 4. 연습 모드 정답 이벤트 발생 시 호출 (연습 전용 업적만 누적, 실전 칭호 분리)
+export function recordPracticeAnswer(_lineId?: number): { newlyUnlocked: Achievement[] } {
     const data = loadAchievementData();
-    data.stats.totalCorrect += 1;
     data.stats.practiceCorrectCount += 1;
-
-    if (lineId) {
-        data.stats.lineCorrectCounts[lineId] = (data.stats.lineCorrectCounts[lineId] || 0) + 1;
-    }
 
     saveAchievementData(data);
     return evaluateAndUnlock(data);

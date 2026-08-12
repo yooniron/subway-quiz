@@ -16,13 +16,13 @@ import { RoomWaitingModal } from './components/common/RoomWaitingModal';
 import { PasswordModal } from './components/common/PasswordModal';
 import { InviteCodeModal } from './components/common/InviteCodeModal';
 import { LineSelectorModal, SUBWAY_LINES } from './components/common/LineSelectorModal';
+import { generateQuizFromSequences } from './data/nationalSubwayData';
 import { playCorrectSound, playWrongSound, playComboSound, playVictorySound } from './lib/sound';
 import { 
     loadAchievementData, 
     recordAnswerEvent, 
     recordSingleScoreEvent, 
     recordHintUsed, 
-    recordPracticeAnswer, 
     recordMultiplayerResult, 
     getEquippedTitle 
 } from './utils/achievements';
@@ -609,29 +609,6 @@ export default function App() {
         loadNextPracticeQuiz(lineIds);
     };
 
-    // 수도권 다양한 무작위 퀴즈 뱅크 (홍대입구 도배 방지 2차 보장)
-    const RANDOM_QUIZ_BANK: Array<{
-        target_station_id: number;
-        target_station_name: string;
-        line_name: string;
-        color_code: string;
-        left_2: string;
-        left_1: string;
-        right_1: string;
-        right_2: string;
-    }> = [
-        { target_station_id: 239, target_station_name: '홍대입구', line_name: '2호선', color_code: '#00A84D', left_2: '이대', left_1: '신촌', right_1: '합정', right_2: '당산' },
-        { target_station_id: 222, target_station_name: '강남', line_name: '2호선', color_code: '#00A84D', left_2: '선릉', left_1: '역삼', right_1: '교대', right_2: '서초' },
-        { target_station_id: 201, target_station_name: '시청', line_name: '2호선', color_code: '#00A84D', left_2: '충정로', left_1: '아현', right_1: '을지로입구', right_2: '을지로3가' },
-        { target_station_id: 226, target_station_name: '사당', line_name: '2호선', color_code: '#00A84D', left_2: '서초', left_1: '방배', right_1: '낙성대', right_2: '서울대입구' },
-        { target_station_id: 234, target_station_name: '신도림', line_name: '2호선', color_code: '#00A84D', left_2: '신림', left_1: '대림', right_1: '문래', right_2: '영등포구청' },
-        { target_station_id: 303, target_station_name: '고속터미널', line_name: '3호선', color_code: '#EF7C1C', left_2: '신사', left_1: '잠원', right_1: '교대', right_2: '남부터미널' },
-        { target_station_id: 101, target_station_name: '종로3가', line_name: '1호선', color_code: '#0052A4', left_2: '동대문', left_1: '종로5가', right_1: '종각', right_2: '시청' },
-        { target_station_id: 402, target_station_name: '명동', line_name: '4호선', color_code: '#00A5DE', left_2: '동대문', left_1: '충무로', right_1: '회현', right_2: '서울역' },
-        { target_station_id: 216, target_station_name: '잠실', line_name: '2호선', color_code: '#00A84D', left_2: '강변', left_1: '잠실나루', right_1: '잠실새내', right_2: '종합운동장' },
-        { target_station_id: 208, target_station_name: '왕십리', line_name: '2호선', color_code: '#00A84D', left_2: '동대문역사문화공원', left_1: '상왕십리', right_1: '한양대', right_2: '성수' }
-    ];
-
     const loadNextPracticeQuiz = async (customLineIds?: number[]) => {
         try {
             const activeLineIds = customLineIds && customLineIds.length > 0 
@@ -659,13 +636,16 @@ export default function App() {
                     right_2: data[0].right_2
                 });
             } else {
-                // 무작위 퀴즈 뱅크 수발급
-                const randomItem = RANDOM_QUIZ_BANK[Math.floor(Math.random() * RANDOM_QUIZ_BANK.length)];
-                setSingleQuiz(randomItem);
+                // 전국 28개 노선 실시간 동적 퀴즈 생성기 가동
+                const dynamicQuiz = generateQuizFromSequences(activeLineIds);
+                setSingleQuiz(dynamicQuiz as any);
             }
         } catch (_e) {
-            const randomItem = RANDOM_QUIZ_BANK[Math.floor(Math.random() * RANDOM_QUIZ_BANK.length)];
-            setSingleQuiz(randomItem);
+            const activeLineIds = customLineIds && customLineIds.length > 0 
+                ? customLineIds 
+                : (selectedLineIds && selectedLineIds.length > 0 ? selectedLineIds : [1, 2, 3, 4, 9]);
+            const dynamicQuiz = generateQuizFromSequences(activeLineIds);
+            setSingleQuiz(dynamicQuiz as any);
         }
     };
 

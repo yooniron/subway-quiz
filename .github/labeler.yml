@@ -1,0 +1,87 @@
+# GitHub Labeler Configuration (actions/labeler@v5)
+# PR에서 변경된 파일 경로에 따라 Area 및 도메인 라벨을 자동으로 부착합니다.
+
+'📦 area:frontend':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'frontend/src/**'
+          - 'frontend/index.html'
+          - 'frontend/vite.config.ts'
+          - 'frontend/tailwind.config.js'
+
+'🗄️ area:database':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'supabase/**'
+
+'🎮 area:gameplay':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'frontend/src/components/game/**'
+          - 'frontend/src/components/single/**'
+          - 'frontend/src/components/practice/**'
+          - 'frontend/src/pages/SingleGamePage.tsx'
+          - 'frontend/src/pages/PracticeMapGamePage.tsx'
+          - 'frontend/src/data/**'
+          - 'supabase/sql/functions/quiz_engine.sql'
+          - 'supabase/sql/functions/gameplay.sql'
+
+'⚔️ area:multiplayer':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'frontend/src/pages/MultiplayerGamePage.tsx'
+          - 'frontend/src/pages/LobbyPage.tsx'
+          - 'frontend/src/components/common/CreateRoomModal.tsx'
+          - 'frontend/src/components/common/RoomWaitingModal.tsx'
+          - 'frontend/src/components/common/PasswordModal.tsx'
+          - 'frontend/src/components/common/InviteCodeModal.tsx'
+          - 'supabase/sql/functions/matchmaking.sql'
+
+'🏆 area:achievement':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'frontend/src/components/achievement/**'
+          - 'frontend/src/components/leaderboard/**'
+          - 'frontend/src/utils/achievements.ts'
+          - 'supabase/sql/functions/rankings.sql'
+
+'🔐 area:auth':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'frontend/src/components/auth/**'
+          - 'frontend/src/utils/auth.ts'
+          - 'frontend/src/types/auth.ts'
+          - 'supabase/sql/functions/auth.sql'
+
+'🔄 area:data-sync':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'data-sync/**'
+
+'🧪 test':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'frontend/src/test/**'
+          - 'tests/**'
+          - 'playwright.config.ts'
+          - 'vitest.config.ts'
+
+'📝 docs':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'README.md'
+          - 'docs/**'
+          - 'GEMINI.md'
+          - '*.md'
+
+'⚙️ chore':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - '.githooks/**'
+          - 'package.json'
+          - 'frontend/package.json'
+          - 'data-sync/package.json'
+          - 'tsconfig.json'
+          - 'eslint.config.js'
+          - 'vercel.json'

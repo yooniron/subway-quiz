@@ -112,6 +112,7 @@
 
 ## 📝 최근 업데이트 및 변경 사항 (자동 업데이트)
 <!-- RELEASE_LOGS_START -->
+- feat: 🚄 1호선 강제 고착 제거, '이 지역만 선택' 1-Click 지원 및 전국 28개 노선 퀴즈 100% 출제 보장 (2026-08-12)
 - feat: 🚄 부산·대구·대전·광주 & GTX·광역철도 전국 28개 노선망 확장 및 지역별 탭(Region Tabs) 시스템 구축 (2026-08-12)
 - feat: 개인정보 제로(Zero-PII) 익명 로그인 및 클라우드 실시간 동기화 시스템 구현 (2026-08-11)
 - feat: 30종 5단계 티어별 업적 및 칭호 시스템 구현 (2026-08-10)
@@ -123,5 +124,4 @@
 - feat: apply user optimized practice mode and fix IDE warnings (2026-07-30)
 - fix: ESLint v9 Flat Config 전환, 미사용 변수 정돈 및 protected 멤버 접근 완치 (2026-07-30)
 - feat: Web Audio API SFX 효과음 엔진 모듈 개발 및 3개 모드 사운드 연동 (2026-07-29)
-- refactor: 연습 모드 버튼 및 호선 선택 모달 문구 간결화 (2026-07-29)
 <!-- RELEASE_LOGS_END -->

@@ -51,9 +51,12 @@ describe('Achievements and Titles System Tests', () => {
         expect(res.newlyUnlocked.some(a => a.id === 'hint_user')).toBe(true);
     });
 
-    it('should unlock practice_10 after 10 practice answers', () => {
+    it('should unlock practice_10 after 10 practice answers, and should NOT unlock competitive titles', () => {
         for (let i = 0; i < 9; i++) {
-            recordPracticeAnswer(2);
+            const res = recordPracticeAnswer(2);
+            // 연습 모드 정답으로는 '첫 탑승(first_step)'이나 노선 칭호가 해금되지 않아야 함
+            expect(res.newlyUnlocked.some(a => a.id === 'first_step')).toBe(false);
+            expect(res.newlyUnlocked.some(a => a.id === 'line_2_30')).toBe(false);
         }
         const progress = getAchievementProgressList();
         const ach = progress.find(p => p.id === 'practice_10');
@@ -62,6 +65,11 @@ describe('Achievements and Titles System Tests', () => {
 
         const res = recordPracticeAnswer(2);
         expect(res.newlyUnlocked.some(a => a.id === 'practice_10')).toBe(true);
+        // 실전 카운트가 0으로 유지되는지 검증
+        const data = loadAchievementData();
+        expect(data.stats.totalCorrect).toBe(0);
+        expect(data.stats.lineCorrectCounts[2] || 0).toBe(0);
+        expect(data.stats.practiceCorrectCount).toBe(10);
     });
 
     it('should unlock single score achievements properly (1000, 3000, 8000, 15000, 30000)', () => {

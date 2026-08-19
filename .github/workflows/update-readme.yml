@@ -1,10 +1,7 @@
-name: Auto Update README Release Logs
+name: Update README Release Logs (Manual Dispatch)
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: # 수동 실행 지원
+  workflow_dispatch: # 관리자 수동 실행만 지원 (무분별한 자동 봇 커밋 차단)
 
 permissions:
   contents: write

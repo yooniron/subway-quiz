@@ -12,6 +12,7 @@
     "test:gif": "playwright test tests/record-gif.spec.ts",
     "test": "npm run test:unit && npm run test:e2e",
     "lint": "eslint .",
+    "update-readme": "node ../scripts/update-readme.js",
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {

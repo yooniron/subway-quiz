@@ -123,5 +123,5 @@
 - fix: 메인 메뉴 런타임 오류 수정 및 모달/연습모드 렌더링 블록 복원 (2026-08-04)
 - feat: 모든 게임 모드 정답/오답 연출 및 스무스 문제 전환 로직 개선 (Web Audio API 오토플레이 최적화) (2026-07-31)
 - feat: apply user optimized practice mode and fix IDE warnings (2026-07-30)
-- fix: ESLint v9 Flat Config 전환, 미사용 변수 정돈 및 protected 멤버 접근 완치 (2026-07-30)
+- perf: 연습 모드 정답 처리 로직 싱글 모드 100% 동기화 (0ms 즉시 전환) (2026-07-30)
 <!-- RELEASE_LOGS_END -->

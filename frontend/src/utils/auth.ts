@@ -76,24 +76,31 @@ export function mergeAchievementData(cloudUser: AuthUser) {
         ...local.unlockedDates
     };
 
-    // 3. 통계 데이터 최대치 병합
+    // 3. 통계 데이터 최대치 및 노선별 정답 수 스마트 병합
+    const mergedLineCorrectCounts: Record<number, number> = {};
+    const cloudLines = cloudUser.stats?.lineCorrectCounts || {};
+    const localLines = local.stats?.lineCorrectCounts || {};
+    const allLineIds = Array.from(new Set([...Object.keys(cloudLines), ...Object.keys(localLines)]));
+
+    allLineIds.forEach(idStr => {
+        const lineId = parseInt(idStr, 10);
+        mergedLineCorrectCounts[lineId] = Math.max(cloudLines[lineId] || 0, localLines[lineId] || 0);
+    });
+
     const mergedStats = {
-        totalCorrect: Math.max(cloudUser.stats.totalCorrect || 0, local.stats.totalCorrect || 0),
-        maxCombo: Math.max(cloudUser.stats.maxCombo || 0, local.stats.maxCombo || 0),
-        singleHighScore: Math.max(cloudUser.stats.singleHighScore || 0, local.stats.singleHighScore || 0),
-        fastAnswerCount: Math.max(cloudUser.stats.fastAnswerCount || 0, local.stats.fastAnswerCount || 0),
-        superFastAnswerCount: Math.max(cloudUser.stats.superFastAnswerCount || 0, local.stats.superFastAnswerCount || 0),
-        singleGamesPlayed: Math.max(cloudUser.stats.singleGamesPlayed || 0, local.stats.singleGamesPlayed || 0),
-        practiceCorrectCount: Math.max(cloudUser.stats.practiceCorrectCount || 0, local.stats.practiceCorrectCount || 0),
-        multiplayerWins: Math.max(cloudUser.stats.multiplayerWins || 0, local.stats.multiplayerWins || 0),
-        multiplayerWinStreak: Math.max(cloudUser.stats.multiplayerWinStreak || 0, local.stats.multiplayerWinStreak || 0),
-        maxMultiplayerWinStreak: Math.max(cloudUser.stats.maxMultiplayerWinStreak || 0, local.stats.maxMultiplayerWinStreak || 0),
-        hintsUsedCount: Math.max(cloudUser.stats.hintsUsedCount || 0, local.stats.hintsUsedCount || 0),
-        allClearAchieved: Boolean(cloudUser.stats.allClearAchieved || local.stats.allClearAchieved),
-        lineCorrectCounts: {
-            ...(cloudUser.stats.lineCorrectCounts || {}),
-            ...(local.stats.lineCorrectCounts || {})
-        }
+        totalCorrect: Math.max(cloudUser.stats?.totalCorrect || 0, local.stats?.totalCorrect || 0),
+        maxCombo: Math.max(cloudUser.stats?.maxCombo || 0, local.stats?.maxCombo || 0),
+        singleHighScore: Math.max(cloudUser.stats?.singleHighScore || 0, local.stats?.singleHighScore || 0),
+        fastAnswerCount: Math.max(cloudUser.stats?.fastAnswerCount || 0, local.stats?.fastAnswerCount || 0),
+        superFastAnswerCount: Math.max(cloudUser.stats?.superFastAnswerCount || 0, local.stats?.superFastAnswerCount || 0),
+        singleGamesPlayed: Math.max(cloudUser.stats?.singleGamesPlayed || 0, local.stats?.singleGamesPlayed || 0),
+        practiceCorrectCount: Math.max(cloudUser.stats?.practiceCorrectCount || 0, local.stats?.practiceCorrectCount || 0),
+        multiplayerWins: Math.max(cloudUser.stats?.multiplayerWins || 0, local.stats?.multiplayerWins || 0),
+        multiplayerWinStreak: Math.max(cloudUser.stats?.multiplayerWinStreak || 0, local.stats?.multiplayerWinStreak || 0),
+        maxMultiplayerWinStreak: Math.max(cloudUser.stats?.maxMultiplayerWinStreak || 0, local.stats?.maxMultiplayerWinStreak || 0),
+        hintsUsedCount: Math.max(cloudUser.stats?.hintsUsedCount || 0, local.stats?.hintsUsedCount || 0),
+        allClearAchieved: Boolean(cloudUser.stats?.allClearAchieved || local.stats?.allClearAchieved),
+        lineCorrectCounts: mergedLineCorrectCounts
     };
 
     const equippedTitle = cloudUser.equippedTitle || local.equippedTitle || null;

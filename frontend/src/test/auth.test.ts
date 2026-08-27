@@ -91,7 +91,7 @@ describe('Auth & Cloud Sync Engine Tests', () => {
             }
         });
 
-        // 클라우드 계정 데이터 (클라우드에서 딴 대전승리와 업적)
+        // 클라우드 계정 데이터 (클라우드에서 딴 대전승리와 업적 및 2호선 카운트)
         const cloudUser: AuthUser = {
             id: 'cloud-user-uuid',
             username: 'cloud_master',
@@ -112,7 +112,7 @@ describe('Auth & Cloud Sync Engine Tests', () => {
                 maxMultiplayerWinStreak: 2,
                 hintsUsedCount: 1,
                 allClearAchieved: false,
-                lineCorrectCounts: { 1: 20 }
+                lineCorrectCounts: { 1: 20, 2: 25 }
             }
         };
 
@@ -124,15 +124,16 @@ describe('Auth & Cloud Sync Engine Tests', () => {
         expect(merged.unlockedIds).toContain('first_win');
         expect(merged.unlockedIds.length).toBe(3);
 
-        // 최대치 수치 병합 검증
+        // 최대치 수치 및 노선 키별 병합 검증
         expect(merged.stats.totalCorrect).toBe(50); // max(15, 50)
         expect(merged.stats.maxCombo).toBe(8); // max(8, 6)
         expect(merged.stats.singleHighScore).toBe(2000); // max(2000, 1800)
         expect(merged.stats.multiplayerWins).toBe(5);
-        expect(merged.stats.lineCorrectCounts[2]).toBe(15);
         expect(merged.stats.lineCorrectCounts[1]).toBe(20);
+        expect(merged.stats.lineCorrectCounts[2]).toBe(25); // max(25, 15) -> 25
 
         const loadedLocal = loadAchievementData();
         expect(loadedLocal.unlockedIds.length).toBe(3);
+        expect(loadedLocal.stats.lineCorrectCounts[2]).toBe(25);
     });
 });

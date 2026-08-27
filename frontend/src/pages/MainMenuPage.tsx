@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Zap, Trophy, Layers, Settings2, Compass, Award, User, LogIn, LogOut, Cloud } from 'lucide-react';
+import { Users, Zap, Trophy, Layers, Settings2, Compass, Award, User, LogIn, LogOut, Cloud, BarChart2 } from 'lucide-react';
 import { Header } from '../components/common/Header';
 import { SUBWAY_LINES } from '../components/common/LineSelectorModal';
 
@@ -9,6 +9,7 @@ interface MainMenuPageProps {
     onOpenLineSelectorWithMode: (mode: 'SINGLE' | 'MULTIPLAYER' | 'PRACTICE') => void;
     onStartPractice: () => void;
     onOpenAchievements?: () => void;
+    onOpenStats?: () => void;
     equippedTitle?: string | null;
     unlockedAchievementCount?: number;
     onOpenAuthModal?: () => void;
@@ -23,6 +24,7 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
     onOpenLineSelectorWithMode,
     onStartPractice: _onStartPractice,
     onOpenAchievements,
+    onOpenStats,
     equippedTitle,
     unlockedAchievementCount = 0,
     onOpenAuthModal,
@@ -195,21 +197,29 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
                         🗺️ 연습 모드
                     </button>
 
-                    <div className="grid grid-cols-2 gap-2.5 w-full">
+                    <div className="grid grid-cols-3 gap-2 w-full">
                         <button 
                             onClick={onOpenAchievements}
-                            className="py-3.5 bg-gray-900/90 border border-yellow-400/30 hover:border-yellow-400/60 hover:bg-gray-800 text-yellow-300 font-bold text-xs sm:text-sm rounded-2xl transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                            className="py-3 bg-gray-900/90 border border-yellow-400/30 hover:border-yellow-400/60 hover:bg-gray-800 text-yellow-300 font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1 shadow-md cursor-pointer"
                         >
-                            <Award className="w-4 h-4 text-yellow-400" />
+                            <Award className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
                             <span>업적 ({unlockedAchievementCount}/30)</span>
                         </button>
 
                         <button 
                             onClick={onFetchLeaderboard}
-                            className="py-3.5 bg-gray-900/90 border border-gray-800 hover:border-emerald-500/40 hover:bg-gray-800 text-gray-300 hover:text-white font-bold text-xs sm:text-sm rounded-2xl transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                            className="py-3 bg-gray-900/90 border border-gray-800 hover:border-emerald-500/40 hover:bg-gray-800 text-gray-300 hover:text-white font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1 shadow-md cursor-pointer"
                         >
-                            <Trophy className="w-4 h-4 text-amber-400" />
-                            <span>명예의 전당</span>
+                            <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span>리더보드</span>
+                        </button>
+
+                        <button 
+                            onClick={onOpenStats}
+                            className="py-3 bg-gray-900/90 border border-blue-400/30 hover:border-blue-400/60 hover:bg-gray-800 text-blue-300 font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1 shadow-md cursor-pointer"
+                        >
+                            <BarChart2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                            <span>나의 통계</span>
                         </button>
                     </div>
                 </div>

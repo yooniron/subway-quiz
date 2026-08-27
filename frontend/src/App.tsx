@@ -161,8 +161,9 @@ export default function App() {
                 showToast('score', `🎉 업적 달성! [${ach.title}] - 칭호 획득: [${ach.rewardTitle}]! 👑`);
             });
             playVictorySound();
-            syncCloudProfile().catch(() => {});
         }
+        // 로그인 세션이 존재하면 최신 누적 통계 실시간 클라우드 영구 동기화
+        syncCloudProfile().catch(() => {});
     };
 
     // 로그인 / 회원가입 성공 처리 핸들러

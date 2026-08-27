@@ -5,6 +5,7 @@ import type { Quiz, RankingEntry, Toast, GameMode, PlayerRole, RoomStatus, Lobby
 import { ToastContainer } from './components/common/ToastContainer';
 import { LeaderboardModal } from './components/leaderboard/LeaderboardModal';
 import { AchievementModal } from './components/achievement/AchievementModal';
+import { UserStatsModal } from './components/stats/UserStatsModal';
 import { AuthModal } from './components/auth/AuthModal';
 import { MainMenuPage } from './pages/MainMenuPage';
 import { SingleGamePage } from './pages/SingleGamePage';
@@ -112,6 +113,7 @@ export default function App() {
     const [nicknameInput, setNicknameInput] = useState(() => localStorage.getItem('subway_nickname') || '');
     const [isRankSubmitted, setIsRankSubmitted] = useState(false);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+    const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
     const [rankingsList, setRankingsList] = useState<RankingEntry[]>([]);
 
     // 연출 및 트랜지션용 상태 변수들
@@ -1329,6 +1331,13 @@ export default function App() {
                 }}
             />
 
+            <UserStatsModal 
+                isOpen={isStatsModalOpen}
+                onClose={() => setIsStatsModalOpen(false)}
+                nickname={authSession?.user.nickname || nicknameInput || '게스트'}
+                equippedTitle={equippedTitle}
+            />
+
             {gameMode === 'MENU' && (
                 <MainMenuPage 
                     onFetchLeaderboard={() => fetchLeaderboard(null)}
@@ -1336,6 +1345,7 @@ export default function App() {
                     onOpenLineSelectorWithMode={handleOpenLineSelectorWithMode}
                     onStartPractice={startPracticeMode}
                     onOpenAchievements={() => setIsAchievementModalOpen(true)}
+                    onOpenStats={() => setIsStatsModalOpen(true)}
                     equippedTitle={equippedTitle}
                     unlockedAchievementCount={unlockedAchievementCount}
                     onOpenAuthModal={() => setIsAuthModalOpen(true)}

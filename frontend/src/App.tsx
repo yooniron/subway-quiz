@@ -6,6 +6,9 @@ import { ToastContainer } from './components/common/ToastContainer';
 import { LeaderboardModal } from './components/leaderboard/LeaderboardModal';
 import { AchievementModal } from './components/achievement/AchievementModal';
 import { UserStatsModal } from './components/stats/UserStatsModal';
+import { PartyRoomWaitingModal } from './components/party/PartyRoomWaitingModal';
+import { PartyMultiplayerGamePage } from './pages/PartyMultiplayerGamePage';
+import { generatePartyInviteCode, type PartyPlayer, type PartyRoomState } from './utils/partyRoom';
 import { AuthModal } from './components/auth/AuthModal';
 import { MainMenuPage } from './pages/MainMenuPage';
 import { SingleGamePage } from './pages/SingleGamePage';
@@ -114,6 +117,9 @@ export default function App() {
     const [isRankSubmitted, setIsRankSubmitted] = useState(false);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
     const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+    const [isPartyWaitingModalOpen, setIsPartyWaitingModalOpen] = useState(false);
+    const [partyRoomState, setPartyRoomState] = useState<PartyRoomState | null>(null);
+    const [partyQuizList, setPartyQuizList] = useState<Quiz[]>([]);
     const [rankingsList, setRankingsList] = useState<RankingEntry[]>([]);
 
     // 연출 및 트랜지션용 상태 변수들
@@ -1310,7 +1316,6 @@ export default function App() {
                 }}
                 onConfirm={handleConfirmPasswordJoin}
             />
-
             <InviteCodeModal 
                 isOpen={isInviteCodeModalOpen}
                 onClose={() => setIsInviteCodeModalOpen(false)}
@@ -1339,6 +1344,21 @@ export default function App() {
                 equippedTitle={equippedTitle}
             />
 
+            {partyRoomState && (
+                <PartyRoomWaitingModal
+                    isOpen={isPartyWaitingModalOpen}
+                    onClose={() => setIsPartyWaitingModalOpen(false)}
+                    roomState={partyRoomState}
+                    currentUserId={myId}
+                    onToggleReady={handleTogglePartyReady}
+                    onStartGame={handleStartPartyGame}
+                    onCopyInviteCode={() => {
+                        navigator.clipboard.writeText(partyRoomState.inviteCode).catch(() => {});
+                        showToast('info', `📋 6자리 파티 초대코드 [${partyRoomState.inviteCode}]가 클립보드에 복사되었습니다!`);
+                    }}
+                />
+            )}
+
             {gameMode === 'MENU' && (
                 <MainMenuPage 
                     onFetchLeaderboard={() => fetchLeaderboard(null)}
@@ -1347,12 +1367,24 @@ export default function App() {
                     onStartPractice={startPracticeMode}
                     onOpenAchievements={() => setIsAchievementModalOpen(true)}
                     onOpenStats={() => setIsStatsModalOpen(true)}
+                    onOpenPartyRoom={handleOpenPartyRoom}
                     equippedTitle={equippedTitle}
                     unlockedAchievementCount={unlockedAchievementCount}
                     onOpenAuthModal={() => setIsAuthModalOpen(true)}
                     onLogout={handleLogout}
                     isLoggedIn={Boolean(authSession)}
                     currentUserNickname={authSession?.user.nickname || nicknameInput || '게스트'}
+                />
+            )}
+
+            {gameMode === 'PARTY' && partyRoomState && (
+                <PartyMultiplayerGamePage
+                    currentUserId={myId}
+                    currentUserNickname={authSession?.user.nickname || nicknameInput || '게스트'}
+                    equippedTitle={equippedTitle}
+                    initialPlayers={partyRoomState.players}
+                    quizList={partyQuizList}
+                    onExitGame={handleExitPartyGame}
                 />
             )}
 

@@ -6,6 +6,9 @@ import { ToastContainer } from './components/common/ToastContainer';
 import { LeaderboardModal } from './components/leaderboard/LeaderboardModal';
 import { AchievementModal } from './components/achievement/AchievementModal';
 import { UserStatsModal } from './components/stats/UserStatsModal';
+import { PartyRoomWaitingModal } from './components/party/PartyRoomWaitingModal';
+import { PartyMultiplayerGamePage } from './pages/PartyMultiplayerGamePage';
+import { generatePartyInviteCode, type PartyPlayer, type PartyRoomState } from './utils/partyRoom';
 import { AuthModal } from './components/auth/AuthModal';
 import { MainMenuPage } from './pages/MainMenuPage';
 import { SingleGamePage } from './pages/SingleGamePage';
@@ -114,6 +117,9 @@ export default function App() {
     const [isRankSubmitted, setIsRankSubmitted] = useState(false);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
     const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+    const [isPartyWaitingModalOpen, setIsPartyWaitingModalOpen] = useState(false);
+    const [partyRoomState, setPartyRoomState] = useState<PartyRoomState | null>(null);
+    const [partyQuizList, setPartyQuizList] = useState<Quiz[]>([]);
     const [rankingsList, setRankingsList] = useState<RankingEntry[]>([]);
 
     // 연출 및 트랜지션용 상태 변수들
@@ -1270,10 +1276,69 @@ export default function App() {
         }
     };
 
-    // 30초 스피드 대전 힌트 공개 플래그 (양끝 2단계 역 선공개 ➡️ 10초 뒤 직접 인접역 후공개)
-    const showL2 = true;                   // 1단계: 양끝 2단계 역(left_2, right_2)은 0초부터 항상 선공개
-    const showL1 = timeLeft <= 20;         // 2단계: 10초 경과(남은시간 20초 이하) 시 직접 인접역(left_1, right_1) 언락
-    const showHintChar = timeLeft <= 10;   // 3단계: 20초 경과(남은시간 10초 이하) 시 정답 초성 힌트 언락
+    const handleOpenPartyRoom = () => {
+        const myNickname = authSession?.user.nickname || nicknameInput || '게스트';
+        const hostPlayer: PartyPlayer = {
+            id: myId,
+            nickname: myNickname,
+            equippedTitle: equippedTitle,
+            score: 0,
+            isHost: true,
+            isReady: true,
+            hasAnswered: false,
+            combo: 0
+        };
+
+        const botPlayers: PartyPlayer[] = [
+            { id: 'bot-1', nickname: '지하철고수', equippedTitle: '2호선 마스터', score: 0, isHost: false, isReady: true, hasAnswered: false, combo: 0 },
+            { id: 'bot-2', nickname: '스피드러너', equippedTitle: '초음속 기관사', score: 0, isHost: false, isReady: true, hasAnswered: false, combo: 0 },
+            { id: 'bot-3', nickname: '신도림탑승객', equippedTitle: '환승의 달인', score: 0, isHost: false, isReady: true, hasAnswered: false, combo: 0 }
+        ];
+
+        const initialRoom: PartyRoomState = {
+            id: 'party_' + Date.now(),
+            title: '🎉 지하철 8인 스피드 다인전 서바이벌',
+            inviteCode: generatePartyInviteCode(),
+            isPrivate: false,
+            selectedLineIds: selectedLineIds,
+            maxPlayers: 8,
+            currentRound: 1,
+            totalRounds: 10,
+            status: 'WAITING',
+            players: [hostPlayer, ...botPlayers]
+        };
+
+        setPartyRoomState(initialRoom);
+        setIsPartyWaitingModalOpen(true);
+    };
+
+    const handleTogglePartyReady = () => {
+        if (!partyRoomState) return;
+        setPartyRoomState(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                players: prev.players.map(p => p.id === myId ? { ...p, isReady: !p.isReady } : p)
+            };
+        });
+    };
+
+    const handleStartPartyGame = () => {
+        if (!partyRoomState) return;
+        const quizzes: Quiz[] = [];
+        for (let i = 0; i < 10; i++) {
+            const q = generateQuizFromSequences(selectedLineIds, []);
+            if (q) quizzes.push(q);
+        }
+        setPartyQuizList(quizzes);
+        setIsPartyWaitingModalOpen(false);
+        setGameMode('PARTY');
+    };
+
+    const handleExitPartyGame = () => {
+        setGameMode('MENU');
+        setPartyRoomState(null);
+    };
 
     return (
         <>
@@ -1310,7 +1375,6 @@ export default function App() {
                 }}
                 onConfirm={handleConfirmPasswordJoin}
             />
-
             <InviteCodeModal 
                 isOpen={isInviteCodeModalOpen}
                 onClose={() => setIsInviteCodeModalOpen(false)}
@@ -1339,6 +1403,21 @@ export default function App() {
                 equippedTitle={equippedTitle}
             />
 
+            {partyRoomState && (
+                <PartyRoomWaitingModal
+                    isOpen={isPartyWaitingModalOpen}
+                    onClose={() => setIsPartyWaitingModalOpen(false)}
+                    roomState={partyRoomState}
+                    currentUserId={myId}
+                    onToggleReady={handleTogglePartyReady}
+                    onStartGame={handleStartPartyGame}
+                    onCopyInviteCode={() => {
+                        navigator.clipboard.writeText(partyRoomState.inviteCode).catch(() => {});
+                        showToast('info', `📋 6자리 파티 초대코드 [${partyRoomState.inviteCode}]가 클립보드에 복사되었습니다!`);
+                    }}
+                />
+            )}
+
             {gameMode === 'MENU' && (
                 <MainMenuPage 
                     onFetchLeaderboard={() => fetchLeaderboard(null)}
@@ -1347,12 +1426,24 @@ export default function App() {
                     onStartPractice={startPracticeMode}
                     onOpenAchievements={() => setIsAchievementModalOpen(true)}
                     onOpenStats={() => setIsStatsModalOpen(true)}
+                    onOpenPartyRoom={handleOpenPartyRoom}
                     equippedTitle={equippedTitle}
                     unlockedAchievementCount={unlockedAchievementCount}
                     onOpenAuthModal={() => setIsAuthModalOpen(true)}
                     onLogout={handleLogout}
                     isLoggedIn={Boolean(authSession)}
                     currentUserNickname={authSession?.user.nickname || nicknameInput || '게스트'}
+                />
+            )}
+
+            {gameMode === 'PARTY' && partyRoomState && (
+                <PartyMultiplayerGamePage
+                    currentUserId={myId}
+                    currentUserNickname={authSession?.user.nickname || nicknameInput || '게스트'}
+                    equippedTitle={equippedTitle}
+                    initialPlayers={partyRoomState.players}
+                    quizList={partyQuizList}
+                    onExitGame={handleExitPartyGame}
                 />
             )}
 

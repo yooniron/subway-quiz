@@ -10,6 +10,7 @@ interface MainMenuPageProps {
     onStartPractice: () => void;
     onOpenAchievements?: () => void;
     onOpenStats?: () => void;
+    onOpenPartyRoom?: () => void;
     equippedTitle?: string | null;
     unlockedAchievementCount?: number;
     onOpenAuthModal?: () => void;
@@ -25,6 +26,7 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
     onStartPractice: _onStartPractice,
     onOpenAchievements,
     onOpenStats,
+    onOpenPartyRoom,
     equippedTitle,
     unlockedAchievementCount = 0,
     onOpenAuthModal,
@@ -174,6 +176,17 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
                 </div>
 
                 <div className="flex flex-col gap-3 w-full">
+                    <button 
+                        onClick={onOpenPartyRoom}
+                        className="w-full py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-black text-lg rounded-2xl shadow-xl shadow-indigo-500/30 transition-all transform active:scale-95 flex items-center justify-center gap-2 group border border-purple-400/40 cursor-pointer relative overflow-hidden"
+                    >
+                        <span className="absolute top-2 right-3 text-[10px] font-black bg-yellow-400 text-gray-950 px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                            NEW 8인 대전
+                        </span>
+                        <Users className="w-6 h-6 transition-transform group-hover:scale-110 text-yellow-300" />
+                        🎮 8인 파티룸 (다인전 서바이벌)
+                    </button>
+
                     <button 
                         onClick={() => onOpenLineSelectorWithMode('MULTIPLAYER')}
                         className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-lg rounded-2xl shadow-xl shadow-emerald-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2 group border border-emerald-300/30 cursor-pointer"

@@ -68,7 +68,7 @@ test.describe('Subway Quiz 기본 네비게이션 및 E2E 기능 검증 테스�
         await expect(page.getByText('업적 & 칭호 보관함')).toBeVisible();
 
         // 닫기 버튼 클릭
-        await page.click('button.absolute.top-5.right-5');
+        await page.click('div.border-b button');
         await expect(page.getByText('업적 & 칭호 보관함')).not.toBeVisible();
     });
 });

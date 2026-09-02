@@ -14,8 +14,8 @@ describe('Party Room & Secret Chat Engine Tests', () => {
     });
 
     it('should calculate differential rank scores accurately according to Rule 1-A', () => {
-        expect(calculatePartyScore(1, 2500)).toBe(120); // 100 + 20 (under 3s)
-        expect(calculatePartyScore(1, 5000)).toBe(100); // 100 (over 3s)
+        expect(calculatePartyScore(1, 5000)).toBe(120); // 100 + 20 (under 7s)
+        expect(calculatePartyScore(1, 8000)).toBe(100); // 100 (over 7s)
         expect(calculatePartyScore(2, 4000)).toBe(80);
         expect(calculatePartyScore(3, 4000)).toBe(60);
         expect(calculatePartyScore(4, 4000)).toBe(50);

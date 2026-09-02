@@ -5,6 +5,7 @@ import type { Quiz } from '../types';
 import type { PartyPlayer, PartyChatMessage } from '../utils/partyRoom';
 import { calculatePartyScore, formatSpoilerFreeNotice, sortPartyPlayers } from '../utils/partyRoom';
 import { playCorrectSound, playWrongSound, playVictorySound } from '../lib/sound';
+import { getChoseong } from '../utils/hangul';
 
 interface PartyMultiplayerGamePageProps {
     currentUserId: string;
@@ -30,8 +31,8 @@ export const PartyMultiplayerGamePage: React.FC<PartyMultiplayerGamePageProps> =
 
     const currentQuiz = quizList[currentRound - 1] || null;
 
-    // 라운드 타이머 및 힌트 상태
-    const [timeLeft, setTimeLeft] = useState<number>(25);
+    // 라운드 타이머 및 힌트 상태 (라운드당 여유 있는 45초 지원!)
+    const [timeLeft, setTimeLeft] = useState<number>(45);
     const [userInput, setUserInput] = useState<string>('');
     const [broadcastNotice, setBroadcastNotice] = useState<string | null>(null);
 
@@ -45,13 +46,14 @@ export const PartyMultiplayerGamePage: React.FC<PartyMultiplayerGamePageProps> =
     const currentMe = players.find(p => p.id === currentUserId);
     const hasCurrentMeAnswered = currentMe?.hasAnswered || false;
 
-    // 힌트 자동 개방 단계
-    const showL1Hint = timeLeft <= 15;
-    const showL2Hint = timeLeft <= 8;
+    // 힌트 자동 개방 단계 (양끝 2단계 역은 0초부터 항상 선공개!)
+    const showL2Hint = true;
+    const showL1Hint = timeLeft <= 30;   // 15초 경과 시 L1 인접역 해금
+    const showHintChar = timeLeft <= 15; // 30초 경과 시 초성 힌트 해금
 
     // 라운드 변경 시 초기화
     useEffect(() => {
-        setTimeLeft(25);
+        setTimeLeft(45);
         setUserInput('');
         setBroadcastNotice(null);
         setPlayers(prev => prev.map(p => ({ ...p, hasAnswered: false, finishTimeMs: undefined })));
@@ -111,7 +113,7 @@ export const PartyMultiplayerGamePage: React.FC<PartyMultiplayerGamePageProps> =
             // 순위 계산 (이미 맞힌 인원 수 + 1)
             const answeredCount = players.filter(p => p.hasAnswered).length;
             const myRank = answeredCount + 1;
-            const responseTimeMs = (25 - timeLeft) * 1000;
+            const responseTimeMs = (45 - timeLeft) * 1000;
             const earnedScore = calculatePartyScore(myRank, responseTimeMs);
 
             // 내 상태 갱신
@@ -302,10 +304,14 @@ export const PartyMultiplayerGamePage: React.FC<PartyMultiplayerGamePageProps> =
                         </div>
 
                         <div className="flex flex-col items-center w-1/5">
-                            <div className="w-11 h-11 rounded-full border-4 border-yellow-400 bg-white flex items-center justify-center animate-pulse">
-                                <span className="text-gray-950 font-black text-base">?</span>
+                            <div className="w-11 h-11 rounded-full border-4 border-yellow-400 bg-white flex items-center justify-center animate-pulse shadow-md">
+                                <span className="text-gray-950 font-black text-base">
+                                    {showHintChar ? getChoseong(currentQuiz.target_station_name) : '?'}
+                                </span>
                             </div>
-                            <span className="mt-1.5 text-xs font-black text-yellow-400">[ 정답 입력 ]</span>
+                            <span className="mt-1.5 text-xs font-black text-yellow-400">
+                                {showHintChar ? '💡 초성 힌트' : '[ 정답 입력 ]'}
+                            </span>
                         </div>
 
                         <div className={`flex flex-col items-center w-1/5 transition-all ${showL1Hint ? 'opacity-100' : 'opacity-20 blur-xs'}`}>

@@ -1289,12 +1289,6 @@ export default function App() {
             combo: 0
         };
 
-        const botPlayers: PartyPlayer[] = [
-            { id: 'bot-1', nickname: '지하철고수', equippedTitle: '2호선 마스터', score: 0, isHost: false, isReady: true, hasAnswered: false, combo: 0 },
-            { id: 'bot-2', nickname: '스피드러너', equippedTitle: '초음속 기관사', score: 0, isHost: false, isReady: true, hasAnswered: false, combo: 0 },
-            { id: 'bot-3', nickname: '신도림탑승객', equippedTitle: '환승의 달인', score: 0, isHost: false, isReady: true, hasAnswered: false, combo: 0 }
-        ];
-
         const initialRoom: PartyRoomState = {
             id: 'party_' + Date.now(),
             title: '🎉 지하철 8인 스피드 다인전 서바이벌',
@@ -1305,7 +1299,7 @@ export default function App() {
             currentRound: 1,
             totalRounds: 10,
             status: 'WAITING',
-            players: [hostPlayer, ...botPlayers]
+            players: [hostPlayer]
         };
 
         setPartyRoomState(initialRoom);

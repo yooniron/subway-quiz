@@ -52,8 +52,8 @@ export function calculatePartyScore(rank: number, responseTimeMs: number): numbe
     else if (rank === 3) baseScore = 60;
     else if (rank === 4) baseScore = 50;
 
-    // 1등이면서 3초 이내 빠르게 맞히면 순발력 보너스 20pts
-    if (rank === 1 && responseTimeMs <= 3000) {
+    // 1등이면서 7초 이내 빠르게 맞히면 순발력 보너스 20pts
+    if (rank === 1 && responseTimeMs <= 7000) {
         baseScore += 20;
     }
 

@@ -186,7 +186,7 @@ export const PartyRoomWaitingModal: React.FC<PartyRoomWaitingModalProps> = ({
                             </button>
                             {!canStart && (
                                 <p className="text-center text-xs text-amber-400 font-bold mt-2">
-                                    ⚠️ 최소 2명 이상 접속하고 모든 참가자가 [준비 완료] 상태여야 시작할 수 있습니다.
+                                    ⚠️ 최소 2명 이상 접속하고 모든 참가자가 [준비 완료] 상태여야 시작할 수 있습니다. (초대 코드 공유로 플레이어를 초대하세요)
                                 </p>
                             )}
                         </div>

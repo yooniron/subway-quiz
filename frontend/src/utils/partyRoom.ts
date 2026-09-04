@@ -78,3 +78,46 @@ export function sortPartyPlayers(players: PartyPlayer[]): PartyPlayer[] {
         return b.combo - a.combo;
     });
 }
+
+export type PartyBroadcastEventType = 
+    | 'JOIN_PLAYER' 
+    | 'TOGGLE_READY' 
+    | 'START_GAME' 
+    | 'SUBMIT_ANSWER' 
+    | 'SECRET_CHAT' 
+    | 'NEXT_ROUND'
+    | 'LEAVE_PLAYER';
+
+export interface PartyJoinPayload {
+    player: PartyPlayer;
+}
+
+export interface PartyToggleReadyPayload {
+    playerId: string;
+    isReady: boolean;
+}
+
+export interface PartyStartGamePayload {
+    quizzes: any[];
+}
+
+export interface PartySubmitAnswerPayload {
+    playerId: string;
+    nickname: string;
+    rank: number;
+    earnedScore: number;
+    round: number;
+}
+
+export interface PartySecretChatPayload {
+    message: PartyChatMessage;
+}
+
+export interface PartyNextRoundPayload {
+    nextRound: number;
+}
+
+export interface PartyLeavePayload {
+    playerId: string;
+}
+

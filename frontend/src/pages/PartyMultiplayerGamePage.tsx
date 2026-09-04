@@ -7,10 +7,13 @@ import { calculatePartyScore, formatSpoilerFreeNotice, sortPartyPlayers } from '
 import { playCorrectSound, playWrongSound, playVictorySound } from '../lib/sound';
 import { getChoseong } from '../utils/hangul';
 
+import { usePartyRoomChannel } from '../hooks/usePartyRoomChannel';
+
 interface PartyMultiplayerGamePageProps {
     currentUserId: string;
     currentUserNickname: string;
     equippedTitle?: string | null;
+    inviteCode?: string | null;
     initialPlayers: PartyPlayer[];
     quizList: Quiz[];
     onExitGame: () => void;
@@ -20,6 +23,7 @@ export const PartyMultiplayerGamePage: React.FC<PartyMultiplayerGamePageProps> =
     currentUserId,
     currentUserNickname,
     equippedTitle,
+    inviteCode,
     initialPlayers,
     quizList,
     onExitGame
@@ -42,6 +46,46 @@ export const PartyMultiplayerGamePage: React.FC<PartyMultiplayerGamePageProps> =
 
     // 시상식 최종 상태
     const [isFinished, setIsFinished] = useState<boolean>(false);
+
+    const {
+        broadcastSubmitAnswer,
+        broadcastSecretChat
+    } = usePartyRoomChannel({
+        inviteCode: inviteCode || null,
+        currentUserId,
+        currentUserNickname,
+        equippedTitle,
+        onAnswerSubmitted: (payload) => {
+            if (payload.playerId === currentUserId) return;
+            setPlayers(prev => {
+                const next = prev.map(p => {
+                    if (p.id === payload.playerId) {
+                        return {
+                            ...p,
+                            score: p.score + payload.earnedScore,
+                            combo: p.combo + 1,
+                            hasAnswered: true,
+                            rank: payload.rank
+                        };
+                    }
+                    return p;
+                });
+                return sortPartyPlayers(next);
+            });
+            const notice = formatSpoilerFreeNotice(payload.nickname, payload.rank, payload.earnedScore);
+            setBroadcastNotice(notice);
+            setTimeout(() => setBroadcastNotice(null), 3000);
+        },
+        onSecretChatReceived: (msg) => {
+            setChatMessages(prev => {
+                if (prev.some(m => m.id === msg.id)) return prev;
+                return [...prev, msg];
+            });
+        },
+        onPlayerLeft: (leftPlayerId) => {
+            setPlayers(prev => prev.filter(p => p.id !== leftPlayerId));
+        }
+    });
 
     const currentMe = players.find(p => p.id === currentUserId);
     const hasCurrentMeAnswered = currentMe?.hasAnswered || false;
@@ -133,6 +177,15 @@ export const PartyMultiplayerGamePage: React.FC<PartyMultiplayerGamePageProps> =
                 return sortPartyPlayers(next);
             });
 
+            // 소켓으로 타 플레이어에게 정답 브로드캐스트 전파
+            broadcastSubmitAnswer({
+                playerId: currentUserId,
+                nickname: currentUserNickname,
+                rank: myRank,
+                earnedScore,
+                round: currentRound
+            });
+
             // 스포일러 방지 방송 알림 표출 (역 이름 0% 노출)
             const notice = formatSpoilerFreeNotice(currentUserNickname, myRank, earnedScore);
             setBroadcastNotice(notice);
@@ -171,6 +224,7 @@ export const PartyMultiplayerGamePage: React.FC<PartyMultiplayerGamePageProps> =
         };
 
         setChatMessages(prev => [...prev, newMsg]);
+        broadcastSecretChat(newMsg);
         if (!textToSend) setChatInput('');
     };
 

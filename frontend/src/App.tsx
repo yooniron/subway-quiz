@@ -9,6 +9,7 @@ import { UserStatsModal } from './components/stats/UserStatsModal';
 import { PartyRoomWaitingModal } from './components/party/PartyRoomWaitingModal';
 import { PartyMultiplayerGamePage } from './pages/PartyMultiplayerGamePage';
 import { generatePartyInviteCode, type PartyPlayer, type PartyRoomState } from './utils/partyRoom';
+import { usePartyRoomChannel } from './hooks/usePartyRoomChannel';
 import { AuthModal } from './components/auth/AuthModal';
 import { MainMenuPage } from './pages/MainMenuPage';
 import { SingleGamePage } from './pages/SingleGamePage';
@@ -437,9 +438,41 @@ export default function App() {
     }, [roomId, myId]);
 
     const handleJoinByInviteCode = async (code: string) => {
+        const cleanCode = code.trim().toUpperCase();
+        if (cleanCode.startsWith('PARTY-') || cleanCode.startsWith('PARTY')) {
+            const formattedCode = cleanCode.startsWith('PARTY-') ? cleanCode : `PARTY-${cleanCode.replace(/^PARTY/, '')}`;
+            const myNickname = authSession?.user.nickname || nicknameInput || '게스트';
+            const joinedPlayer: PartyPlayer = {
+                id: myId,
+                nickname: myNickname,
+                equippedTitle,
+                score: 0,
+                isHost: false,
+                isReady: false,
+                hasAnswered: false,
+                combo: 0
+            };
+            setIsInviteCodeModalOpen(false);
+            setPartyRoomState({
+                id: 'party_' + formattedCode,
+                title: '🎉 지하철 8인 스피드 다인전 서바이벌',
+                inviteCode: formattedCode,
+                isPrivate: false,
+                selectedLineIds: selectedLineIds,
+                maxPlayers: 8,
+                currentRound: 1,
+                totalRounds: 10,
+                status: 'WAITING',
+                players: [joinedPlayer]
+            });
+            setIsPartyWaitingModalOpen(true);
+            showToast('success', `🔑 파티 초대코드 [${formattedCode}] 채널에 접속했습니다!`);
+            return;
+        }
+
         try {
             const { data, error } = await supabase.rpc('join_room_by_code', {
-                p_invite_code: code,
+                p_invite_code: cleanCode,
                 p_player_id: myId
             });
             if (error) {
@@ -1276,6 +1309,57 @@ export default function App() {
         }
     };
 
+    const {
+        broadcastJoin,
+        broadcastToggleReady,
+        broadcastStartGame,
+        broadcastLeave
+    } = usePartyRoomChannel({
+        inviteCode: partyRoomState?.inviteCode || null,
+        currentUserId: myId,
+        currentUserNickname: authSession?.user.nickname || nicknameInput || '게스트',
+        equippedTitle,
+        onPlayerJoined: (newPlayer) => {
+            setPartyRoomState(prev => {
+                if (!prev) return null;
+                if (prev.players.some(p => p.id === newPlayer.id)) return prev;
+                showToast('info', `👋 [${newPlayer.nickname}]님이 파티룸에 입장하셨습니다!`);
+                return {
+                    ...prev,
+                    players: [...prev.players, newPlayer]
+                };
+            });
+        },
+        onPlayerReadyToggled: (playerId, isReady) => {
+            setPartyRoomState(prev => {
+                if (!prev) return null;
+                return {
+                    ...prev,
+                    players: prev.players.map(p => p.id === playerId ? { ...p, isReady } : p)
+                };
+            });
+        },
+        onGameStarted: (quizzes) => {
+            setPartyQuizList(quizzes);
+            setIsPartyWaitingModalOpen(false);
+            setGameMode('PARTY');
+            showToast('success', "🚀 파티 대전이 시작되었습니다!");
+        },
+        onPlayerLeft: (leftId) => {
+            setPartyRoomState(prev => {
+                if (!prev) return null;
+                const leftPlayer = prev.players.find(p => p.id === leftId);
+                if (leftPlayer) {
+                    showToast('info', `🚪 [${leftPlayer.nickname}]님이 퇴장하셨습니다.`);
+                }
+                return {
+                    ...prev,
+                    players: prev.players.filter(p => p.id !== leftId)
+                };
+            });
+        }
+    });
+
     const handleOpenPartyRoom = () => {
         const myNickname = authSession?.user.nickname || nicknameInput || '게스트';
         const hostPlayer: PartyPlayer = {
@@ -1304,17 +1388,21 @@ export default function App() {
 
         setPartyRoomState(initialRoom);
         setIsPartyWaitingModalOpen(true);
+        broadcastJoin(hostPlayer);
     };
 
     const handleTogglePartyReady = () => {
         if (!partyRoomState) return;
+        const myPlayer = partyRoomState.players.find(p => p.id === myId);
+        const nextReady = !myPlayer?.isReady;
         setPartyRoomState(prev => {
             if (!prev) return null;
             return {
                 ...prev,
-                players: prev.players.map(p => p.id === myId ? { ...p, isReady: !p.isReady } : p)
+                players: prev.players.map(p => p.id === myId ? { ...p, isReady: nextReady } : p)
             };
         });
+        broadcastToggleReady(myId, Boolean(nextReady));
     };
 
     const handleStartPartyGame = () => {
@@ -1322,14 +1410,18 @@ export default function App() {
         const quizzes: Quiz[] = [];
         for (let i = 0; i < 10; i++) {
             const q = generateQuizFromSequences(selectedLineIds, []);
-            if (q) quizzes.push(q);
+            if (q) quizzes.push(q as Quiz);
         }
         setPartyQuizList(quizzes);
         setIsPartyWaitingModalOpen(false);
         setGameMode('PARTY');
+        broadcastStartGame(quizzes);
     };
 
     const handleExitPartyGame = () => {
+        if (partyRoomState) {
+            broadcastLeave(myId);
+        }
         setGameMode('MENU');
         setPartyRoomState(null);
     };
@@ -1435,6 +1527,7 @@ export default function App() {
                     currentUserId={myId}
                     currentUserNickname={authSession?.user.nickname || nicknameInput || '게스트'}
                     equippedTitle={equippedTitle}
+                    inviteCode={partyRoomState.inviteCode}
                     initialPlayers={partyRoomState.players}
                     quizList={partyQuizList}
                     onExitGame={handleExitPartyGame}

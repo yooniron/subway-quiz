@@ -1,0 +1,23 @@
+name: 🔄 Keep Supabase Project Active
+
+on:
+  schedule:
+    # 매 3일마다 00:00 UTC (KST 09:00)에 자동 실행 (Supabase 7일 일시중지 타이머 자동 리셋)
+    - cron: '0 0 */3 * *'
+  workflow_dispatch: # GitHub Actions UI에서 수동 실행 지원
+
+jobs:
+  ping-keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🌐 Ping Subway Quiz Frontend & Supabase REST API
+        run: |
+          echo "🚀 Pinging Subway Quiz Live Service..."
+          RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://subway-quiz.vercel.app/)
+          echo "HTTP Response Status: $RESPONSE_CODE"
+          
+          if [ "$RESPONSE_CODE" -eq 200 ] || [ "$RESPONSE_CODE" -eq 304 ]; then
+            echo "✅ Successfully pinged Subway Quiz service! Supabase project keep-alive signal sent."
+          else
+            echo "⚠️ Service responded with HTTP $RESPONSE_CODE"
+          fi

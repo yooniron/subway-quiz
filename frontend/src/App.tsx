@@ -22,7 +22,16 @@ import { PasswordModal } from './components/common/PasswordModal';
 import { InviteCodeModal } from './components/common/InviteCodeModal';
 import { LineSelectorModal, SUBWAY_LINES } from './components/common/LineSelectorModal';
 import { generateQuizFromSequences, LINE_STATION_SEQUENCES } from './data/nationalSubwayData';
-import { playCorrectSound, playWrongSound, playComboSound, playVictorySound } from './lib/sound';
+import { 
+    playCorrectSound, 
+    playWrongSound, 
+    playComboSound, 
+    playVictorySound,
+    playSubwayArrivalChime,
+    playTickingClockSound,
+    playDoorWarningSound,
+    toggleSoundEnabled
+} from './lib/sound';
 import { 
     loadAchievementData, 
     recordAnswerEvent, 
@@ -544,6 +553,62 @@ export default function App() {
         }
     }, [handleJoinRoomById]);
 
+    // 키보드 단축키 (M=음소거, Esc=닫기/메뉴, Space=힌트 사용)
+    useEffect(() => {
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement;
+            const isTyping = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+            // 'M' 또는 'm': 사운드 토글
+            if ((e.key === 'm' || e.key === 'M') && !isTyping) {
+                const isSoundOn = toggleSoundEnabled();
+                showToast('info', isSoundOn ? "🔊 사운드 켜짐" : "🔇 사운드 음소거");
+            }
+
+            // 'Escape': 모달 닫기 및 인게임 나가기
+            if (e.key === 'Escape') {
+                if (isLeaderboardOpen) setIsLeaderboardOpen(false);
+                else if (isAchievementModalOpen) setIsAchievementModalOpen(false);
+                else if (isStatsModalOpen) setIsStatsModalOpen(false);
+                else if (isLineSelectorOpen) setIsLineSelectorOpen(false);
+                else if (isAuthModalOpen) setIsAuthModalOpen(false);
+                else if (isPasswordModalOpen) setIsPasswordModalOpen(false);
+                else if (isInviteCodeModalOpen) setIsInviteCodeModalOpen(false);
+                else if (isCreateRoomOpen) setIsCreateRoomOpen(false);
+                else if (isPartyWaitingModalOpen) setIsPartyWaitingModalOpen(false);
+                else if (gameMode !== 'MENU') {
+                    handleExitToMenu();
+                }
+            }
+
+            // 'Space': 싱글모드 힌트 사용
+            if (e.key === ' ' && gameMode === 'SINGLE' && !isSingleOver && !isHintActive && hintCount > 0) {
+                if (!isTyping || userInput.trim() === '') {
+                    e.preventDefault();
+                    handleUseHint();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    }, [
+        isLeaderboardOpen, 
+        isAchievementModalOpen, 
+        isStatsModalOpen, 
+        isLineSelectorOpen, 
+        isAuthModalOpen, 
+        isPasswordModalOpen, 
+        isInviteCodeModalOpen, 
+        isCreateRoomOpen, 
+        isPartyWaitingModalOpen, 
+        gameMode, 
+        isSingleOver, 
+        isHintActive, 
+        hintCount, 
+        userInput
+    ]);
+
     const handleOpenLineSelectorWithMode = (mode: 'SINGLE' | 'MULTIPLAYER' | 'PRACTICE') => {
         if (mode === 'MULTIPLAYER') {
             setGameMode('LOBBY');
@@ -821,8 +886,12 @@ export default function App() {
             setSingleTimeLeft((prev) => {
                 if (prev <= 1) {
                     setIsSingleOver(true);
+                    playDoorWarningSound();
                     confetti({ particleCount: 100, spread: 70, origin: { y: 0.5 } });
                     return 0;
+                }
+                if (prev <= 11) {
+                    playTickingClockSound();
                 }
                 return prev - 1;
             });

@@ -169,3 +169,82 @@ export const playClickSound = (): void => {
         /* ignore audio error */
     }
 };
+
+// 🚄 지하철 진입/도착 시그널 멜로디 차임 ("띵-동-댕-동♪")
+export const playSubwayArrivalChime = (): void => {
+    if (!getIsSoundEnabled()) return;
+    try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const notes = [659.25, 830.61, 987.77, 1318.51]; // E5 -> G#5 -> B5 -> E6 맑은 승강장 시그널
+
+        notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const noteTime = now + idx * 0.1;
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, noteTime);
+            gain.gain.setValueAtTime(0.12, noteTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.3);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(noteTime);
+            osc.stop(noteTime + 0.3);
+        });
+    } catch {
+        /* ignore audio error */
+    }
+};
+
+// ⏱️ 타임어택 10초 이하 긴박한 시계 째깍거림 SFX (Ticking Clock)
+export const playTickingClockSound = (): void => {
+    if (!getIsSoundEnabled()) return;
+    try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.03);
+
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.03);
+    } catch {
+        /* ignore audio error */
+    }
+};
+
+// 🚨 열차 출입문 닫힘 경고 SFX
+export const playDoorWarningSound = (): void => {
+    if (!getIsSoundEnabled()) return;
+    try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(350, now + 0.15);
+
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+    } catch {
+        /* ignore audio error */
+    }
+};
+

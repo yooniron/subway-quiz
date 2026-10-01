@@ -235,6 +235,16 @@ export const MainMenuPage: React.FC<MainMenuPageProps> = ({
                             <span>나의 통계</span>
                         </button>
                     </div>
+
+                    {/* 키보드 단축키 안내 뱃지 바 */}
+                    <div className="mt-3 pt-2 border-t border-gray-800/80 text-center">
+                        <p className="text-[10px] text-gray-500 font-mono flex items-center justify-center gap-1.5 flex-wrap">
+                            <span>⌨️ 단축키:</span>
+                            <span className="bg-gray-950 px-1.5 py-0.5 rounded border border-gray-800 text-gray-400 font-bold">[M] 음소거</span>
+                            <span className="bg-gray-950 px-1.5 py-0.5 rounded border border-gray-800 text-gray-400 font-bold">[Esc] 닫기/나가기</span>
+                            <span className="bg-gray-950 px-1.5 py-0.5 rounded border border-gray-800 text-gray-400 font-bold">[Space] 힌트</span>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

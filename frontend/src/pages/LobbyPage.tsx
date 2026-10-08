@@ -30,9 +30,9 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     const playingCount = lobbies.filter((r) => r.status === 'PLAYING').length;
 
     return (
-        <div className="flex min-h-screen flex-col items-center bg-gray-950 text-white font-sans px-4 py-8 relative overflow-x-hidden">
-            {/* 네온 배경 블러 효과 */}
-            <div className="absolute top-10 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex min-h-screen flex-col items-center bg-gray-950 text-white font-sans px-4 py-8 relative overflow-x-hidden subway-grid-pattern">
+            {/* 서울 지하철 노선 네온 분위기 앰비언트 글로우 */}
+            <div className="absolute top-10 left-1/4 w-96 h-96 bg-yellow-400/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="w-full max-w-4xl z-10 animate-fade-in">
@@ -40,37 +40,37 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                 <div className="flex items-center justify-between mb-6">
                     <button
                         onClick={onBackToMenu}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700 text-xs font-bold text-gray-300 hover:text-white transition-all"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-900/90 border border-gray-800 hover:border-yellow-400/40 text-xs font-bold text-gray-300 hover:text-white transition-all cursor-pointer active:scale-95"
                     >
                         <ArrowLeft className="w-4 h-4" /> 메인 메뉴
                     </button>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
                         <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                        <span className="text-xs font-bold text-emerald-400">REALTIME LOBBY</span>
+                        <span className="text-xs font-black text-emerald-400 tracking-wider">REALTIME METRO LOBBY</span>
                     </div>
                 </div>
 
-                {/* 로비 메인 타이틀 & 통계 바 */}
-                <div className="bg-gray-900/90 border border-gray-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                {/* 로비 메인 타이틀 & 통계 바 (LCD Departure Display) */}
+                <div className="bg-gray-900/90 border border-yellow-400/20 rounded-3xl p-6 shadow-2xl backdrop-blur-md mb-6 flex flex-col md:flex-row items-center justify-between gap-4 glass-lcd">
                     <div>
-                        <h1 className="text-2xl font-black text-white flex items-center gap-2 mb-1">
-                            <Users className="w-7 h-7 text-amber-400" /> 실시간 멀티 대전 로비
+                        <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 mb-1 tracking-tight">
+                            <Users className="w-8 h-8 text-yellow-400" /> 실시간 지하철 대전 로비
                         </h1>
-                        <p className="text-xs text-gray-400">대기 중인 방에 입장하거나 나만의 대전 방을 개설해 보세요.</p>
+                        <p className="text-xs text-gray-400">대기 중인 열차 방에 승차하거나 나만의 노선 대전 방을 개설해 보세요.</p>
                     </div>
 
                     {/* 카운터 뱃지 */}
-                    <div className="flex items-center gap-2 bg-gray-950 px-4 py-2.5 rounded-2xl border border-gray-800 text-xs font-bold">
-                        <span className="flex items-center gap-1 text-emerald-400">
-                            <Radio className="w-3.5 h-3.5" /> 대기 {waitingCount}개
+                    <div className="flex items-center gap-2 bg-gray-950/90 px-4 py-3 rounded-2xl border border-gray-800 text-xs font-bold shadow-inner">
+                        <span className="flex items-center gap-1.5 text-emerald-400 font-mono">
+                            <Radio className="w-3.5 h-3.5 animate-pulse" /> 대기 <b className="text-sm font-black">{waitingCount}</b>개
                         </span>
                         <span className="text-gray-700">|</span>
-                        <span className="flex items-center gap-1 text-amber-400">
-                            <PlayCircle className="w-3.5 h-3.5" /> 대전 중 {playingCount}개
+                        <span className="flex items-center gap-1.5 text-yellow-400 font-mono">
+                            <PlayCircle className="w-3.5 h-3.5" /> 대전 중 <b className="text-sm font-black">{playingCount}</b>개
                         </span>
                         <span className="text-gray-700">|</span>
-                        <span className="text-gray-400">총 {lobbies.length}개</span>
+                        <span className="text-gray-400 font-mono">총 {lobbies.length}개</span>
                     </div>
                 </div>
 

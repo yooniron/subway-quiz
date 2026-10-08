@@ -37,7 +37,7 @@ export const AnswerForm: React.FC<AnswerFormProps> = ({
     return (
         <form 
             onSubmit={handleFormSubmit} 
-            className="flex gap-2 w-full max-w-sm sm:max-w-md mx-auto relative mt-2 sm:mt-4 pointer-events-auto"
+            className="flex gap-2.5 w-full max-w-sm sm:max-w-md mx-auto relative mt-3 sm:mt-5 pointer-events-auto"
         >
             <input
                 ref={inputRef}
@@ -53,21 +53,22 @@ export const AnswerForm: React.FC<AnswerFormProps> = ({
                 onChange={handleInputChange}
                 onInput={(e: any) => handleInputChange(e)}
                 placeholder={placeholder}
-                style={colorCode && userInput.trim() !== '' ? { borderColor: colorCode, boxShadow: `0 0 20px ${colorCode}40` } : undefined}
-                className={`flex-1 px-4 sm:px-5 py-3 sm:py-3.5 min-h-[48px] rounded-2xl bg-gray-950 border-2 border-gray-800 text-white text-base sm:text-lg font-bold placeholder:text-gray-600 focus:outline-none focus:border-emerald-400 focus:shadow-[0_0_20px_rgba(52,211,153,0.3)] [word-break:keep-all] break-keep transition-all duration-300 ${
-                    disabled ? 'opacity-60 cursor-not-allowed bg-gray-900' : ''
+                style={colorCode && userInput.trim() !== '' ? { borderColor: colorCode, boxShadow: `0 0 25px ${colorCode}50` } : undefined}
+                className={`flex-1 px-4 sm:px-6 py-3.5 sm:py-4 min-h-[52px] rounded-2xl bg-gray-950/90 border-2 border-gray-700 text-white text-base sm:text-xl font-black placeholder:text-gray-500 focus:outline-none focus:border-yellow-400 focus:shadow-[0_0_25px_rgba(250,204,21,0.35)] [word-break:keep-all] break-keep transition-all duration-200 ${
+                    disabled ? 'opacity-50 cursor-not-allowed bg-gray-900' : ''
                 } ${
-                    activeShaking ? 'animate-shake border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] text-red-400' : ''
+                    activeShaking ? 'animate-shake border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.5)] text-red-400' : ''
                 }`}
             />
             <button 
                 type="submit"
                 disabled={disabled}
                 style={colorCode ? { backgroundColor: colorCode } : undefined}
-                className="px-5 sm:px-6 py-3 sm:py-3.5 min-h-[48px] bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-2xl transition-all transform active:scale-95 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 sm:px-7 py-3.5 sm:py-4 min-h-[52px] bg-yellow-400 hover:bg-yellow-300 active:scale-95 text-gray-950 font-black rounded-2xl transition-all transform shadow-xl shadow-yellow-400/20 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
-                <Send className="w-5 h-5"/>
+                <Send className="w-5 h-5 stroke-[2.5] text-gray-950"/>
             </button>
         </form>
     );
 };
+

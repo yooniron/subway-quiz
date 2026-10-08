@@ -101,10 +101,34 @@
     }
     .glass-card-hover:hover {
         transform: translateY(-2px);
-        border-color: rgba(250, 204, 21, 0.3);
-        box-shadow: 0 12px 30px rgba(250, 204, 21, 0.15);
+        border-color: rgba(250, 204, 21, 0.35);
+        box-shadow: 0 12px 30px rgba(250, 204, 21, 0.18);
+    }
+    .glass-lcd {
+        background: radial-gradient(circle at 50% 0%, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(250, 204, 21, 0.2);
+        box-shadow: 0 0 35px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(250, 204, 21, 0.05);
     }
     .lcd-display-glow {
-        box-shadow: 0 0 25px rgba(250, 204, 21, 0.12), inset 0 0 15px rgba(0, 0, 0, 0.8);
+        box-shadow: 0 0 25px rgba(250, 204, 21, 0.15), inset 0 0 15px rgba(0, 0, 0, 0.8);
+    }
+    .cyber-border {
+        position: relative;
+    }
+    .cyber-border::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(250, 204, 21, 0.8), transparent);
+    }
+    .subway-grid-pattern {
+        background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 24px 24px;
     }
 }
+
